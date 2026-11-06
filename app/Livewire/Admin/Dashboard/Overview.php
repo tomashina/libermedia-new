@@ -190,7 +190,7 @@ class Overview extends Component
 
             return [
                 'id' => $status->id,
-                'name' => $status->name,
+                'name' => $status->display_name,
                 'code' => $status->code,
                 'color' => $status->color,
                 'count' => $count,

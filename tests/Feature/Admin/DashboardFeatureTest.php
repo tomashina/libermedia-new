@@ -50,6 +50,39 @@ class DashboardFeatureTest extends TestCase
             ->assertDontSee(__('Catalog & Content Snapshot'));
     }
 
+    public function test_libermedia_dashboard_uses_its_brand_and_localized_status_summary_without_changing_business_data(): void
+    {
+        config(['storefront.brand' => 'libermedia']);
+        $admin = $this->makeUserWithRole('admin');
+        $processing = OrderStatus::create(['code' => 'processing', 'name' => 'Processing', 'is_active' => true, 'sort_order' => 1]);
+        $shipped = OrderStatus::create(['code' => 'shipped', 'name' => 'Shipped', 'is_active' => true, 'sort_order' => 2]);
+        $custom = OrderStatus::create(['code' => 'custom', 'name' => 'Dostava dogovorena', 'is_active' => true, 'sort_order' => 3]);
+        $this->createOrder($custom, $admin, 'LM-DASHBOARD-001', 25, 1, CarbonImmutable::now());
+
+        Livewire::actingAs($admin)->test(Overview::class)
+            ->assertSee('Liber Media Admin')->assertDontSee(__('Termol Admin'))
+            ->assertSee('U pripremi')->assertSee('Poslana')->assertSee('Dostava dogovorena')
+            ->assertDontSee('Processing')->assertDontSee('Shipped')
+            ->assertViewHas('pipeline', function ($pipeline) use ($processing, $shipped, $custom): bool {
+                $rows = $pipeline->keyBy('id');
+
+                return $rows[$processing->id]['name'] === 'U pripremi'
+                    && $rows[$processing->id]['count'] === 0
+                    && $rows[$shipped->id]['name'] === 'Poslana'
+                    && $rows[$shipped->id]['count'] === 0
+                    && $rows[$custom->id]['name'] === 'Dostava dogovorena'
+                    && $rows[$custom->id]['count'] === 1
+                    && str_contains($rows[$processing->id]['url'], 'status='.$processing->id)
+                    && $rows[$processing->id]['code'] === 'processing';
+            });
+        $this->assertSame('Processing', $processing->fresh()->name);
+        $this->assertSame('Shipped', $shipped->fresh()->name);
+
+        config(['storefront.brand' => 'herrera']);
+        Livewire::actingAs($admin)->test(Overview::class)
+            ->assertSee(__('Termol Admin'))->assertSee('Processing')->assertSee('Shipped');
+    }
+
     public function test_dashboard_month_filter_keeps_calendar_order_in_the_enhanced_select(): void
     {
         $admin = $this->makeUserWithRole('admin');

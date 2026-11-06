@@ -195,7 +195,7 @@
     <section class="admin-panel admin-search-panel p-5 sm:p-6" aria-labelledby="dashboard-title">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">
-                <p class="admin-section-title">{{ __('Termol Admin') }}</p>
+                <p class="admin-section-title">{{ \App\Support\StorefrontTheme::usesLibermediaBrand() ? __('Liber Media Admin') : __('Termol Admin') }}</p>
                 <h1 id="dashboard-title" class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ __('Sales Overview') }}</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ __('Sales, orders, and recent activity at a glance.') }}</p>
             </div>

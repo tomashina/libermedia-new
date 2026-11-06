@@ -9,6 +9,7 @@ use App\Models\Sales\Order\Order;
 use App\Models\User\UserAddress;
 use App\Services\Front\ContractWithdrawalNotificationService;
 use App\Services\Front\StoreSettingsService;
+use App\Support\OrderNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -215,7 +216,7 @@ class ReturnRequestController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $validated
+     * @param  array<string, mixed>  $validated
      * @return array<string, string>
      */
     private function normalize(array $validated): array
@@ -237,7 +238,7 @@ class ReturnRequestController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $validated
+     * @param  array<string, mixed>  $validated
      */
     private function verifyCaptcha(Request $request, array $validated): void
     {
@@ -297,7 +298,7 @@ class ReturnRequestController extends Controller
     private function resolveOrder(string $orderNumber, string $email, ?int $userId): ?Order
     {
         return Order::query()
-            ->where('order_number', $orderNumber)
+            ->whereIn('order_number', OrderNumber::lookupCandidates($orderNumber))
             ->where(function ($query) use ($email, $userId): void {
                 $query->where('customer_email', $email);
                 if ($userId) {

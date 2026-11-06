@@ -33,7 +33,7 @@
                         <tbody>
                         @forelse ($orders as $order)
                             <tr class="border-t border-slate-200">
-                                <td class="break-all px-4 py-3 font-semibold text-slate-900">{{ $order->order_number }}</td>
+                                <td class="break-all px-4 py-3 font-semibold text-slate-900">{{ $order->display_order_number }}</td>
                                 <td class="px-4 py-3">{{ optional($order->placed_at ?? $order->created_at)->format('Y-m-d H:i') }}</td>
                                 <td class="px-4 py-3">{{ $order->status?->name ?? __('ui.account.orders.status_new') }}</td>
                                 <td class="px-4 py-3 font-semibold">{{ \App\Support\Currency::format((float) $order->grand_total, $order->currency_code) }}</td>

@@ -18,7 +18,7 @@
     <header class="lm-page-title">
         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">{{ __('ui.checkout.success.eyebrow') }}</p>
         <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">{{ $giftVoucherSettlementAttention ? 'Uplata je zaprimljena.' : __('ui.checkout.success.title') }}</h1>
-        <p class="mt-3 text-slate-600">{{ __('ui.checkout.success.order_number') }}: <span class="font-semibold text-slate-900">{{ $order->order_number }}</span></p>
+        <p class="mt-3 text-slate-600">{{ __('ui.checkout.success.order_number') }}: <span class="font-semibold text-slate-900">{{ $order->display_order_number }}</span></p>
     </header>
     <section class="checkout-status-card checkout-status-card--success">
         @if($giftVoucherSettlementAttention)

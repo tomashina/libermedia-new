@@ -29,7 +29,7 @@
                 <select wire:model="adjustment.order_id" data-tom-select class="mt-2 admin-select w-full rounded-xl border px-3 py-2 text-sm">
                     <option value="">{{ __('No order link') }}</option>
                     @foreach ($this->adjustOrderOptions as $optionOrder)
-                        <option value="{{ $optionOrder->id }}">{{ $optionOrder->order_number }} - {{ $optionOrder->customer_name }}</option>
+                        <option value="{{ $optionOrder->id }}">{{ $optionOrder->display_order_number }} - {{ $optionOrder->customer_name }}</option>
                     @endforeach
                 </select>
                 @error('adjustment.order_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
@@ -169,7 +169,7 @@
                             <td class="px-3 py-2 text-slate-700">
                                 @if ($row->order)
                                     <a href="{{ route('admin.orders.show', ['order' => $row->order->id]) }}" class="text-xs font-semibold text-cyan-700 hover:text-cyan-900">
-                                        {{ $row->order->order_number }}
+                                        {{ $row->order->display_order_number }}
                                     </a>
                                     <div class="text-xs text-slate-500">{{ \App\Support\Currency::format((float) $row->order->grand_total, $row->order->currency_code) }}</div>
                                 @else

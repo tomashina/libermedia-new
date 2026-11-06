@@ -137,7 +137,7 @@ class StoreNotificationService
         if (filter_var($adminTo, FILTER_VALIDATE_EMAIL)) {
             try {
                 $this->withLocale($mailLocale, function () use ($data, $adminTo, $order): void {
-                    $subject = __('mail.orders.subject_admin', ['order' => $order->order_number]);
+                    $subject = __('mail.orders.subject_admin', ['order' => $order->display_order_number]);
                     Mail::send('emails.orders.notification', array_merge($data, [
                         'variant' => 'admin',
                     ]), static function ($mail) use ($adminTo, $order, $subject): void {
@@ -155,7 +155,7 @@ class StoreNotificationService
         if (filter_var($customerTo, FILTER_VALIDATE_EMAIL)) {
             try {
                 $this->withLocale($mailLocale, function () use ($data, $customerTo, $adminTo, $order): void {
-                    $subject = __('mail.orders.subject_customer', ['order' => $order->order_number]);
+                    $subject = __('mail.orders.subject_customer', ['order' => $order->display_order_number]);
                     Mail::send('emails.orders.notification', array_merge($data, [
                         'variant' => 'customer',
                     ]), static function ($mail) use ($customerTo, $adminTo, $subject): void {
@@ -226,6 +226,7 @@ class StoreNotificationService
             'logo_url' => $this->absoluteUrl((string) ($brand['logo_url'] ?? '')),
             'legal_warranty' => $settings['legal_warranty'] ?? [],
             'order_number' => (string) $order->order_number,
+            'display_order_number' => $order->display_order_number,
             'placed_at' => optional($order->placed_at)->format('d.m.Y H:i') ?: '',
             'payment_method' => (string) ($order->payment_method_name ?? ''),
             'shipping_method' => (string) ($order->shipping_method_name ?? ''),

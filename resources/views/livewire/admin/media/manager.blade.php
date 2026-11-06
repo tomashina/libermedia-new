@@ -13,6 +13,19 @@
         </div>
     @else
         <div class="space-y-4">
+            @if ($importedProductImages->isNotEmpty())
+                <section class="rounded-xl border border-slate-200 bg-slate-50 p-4" data-admin-imported-product-images>
+                    <h3 class="text-sm font-semibold text-slate-800">{{ __('Fotografije iz stare trgovine') }}</h3>
+                    <p class="mt-2 text-sm text-slate-600">{{ __('Uvezene fotografije dostupne su za pregled. Nove fotografije možete dodati ispod.') }}</p>
+                    <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        @foreach ($importedProductImages as $importedImage)
+                            <a href="{{ $importedImage }}" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-200 bg-white p-2" wire:key="imported-product-image-{{ $loop->index }}">
+                                <img src="{{ $importedImage }}" alt="{{ __('Fotografija :number', ['number' => $loop->iteration]) }}" width="320" height="320" class="aspect-square w-full object-contain" loading="lazy" decoding="async" data-admin-imported-product-image>
+                            </a>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
             @foreach ($collections as $collectionName => $collectionConfig)
                 @php
                     $collectionMedia = $mediaByCollection[$collectionName] ?? collect();
@@ -134,10 +147,12 @@
                                         $cropWidth = (float) ($mediaMeta['crop_width'] ?? 100);
                                         $cropHeight = (float) ($mediaMeta['crop_height'] ?? 100);
                                         $cacheBuster = trim((string) (($media->updated_at?->timestamp ?? time()).'-'.($media->size ?? 0)));
-                                        $previewUrl = $previewConversion !== '' && $media->hasGeneratedConversion($previewConversion)
-                                            ? $media->getUrl($previewConversion)
-                                            : $media->getUrl();
-                                        $previewUrl .= (str_contains($previewUrl, '?') ? '&' : '?').'v='.$cacheBuster;
+                                        $originalUrl = \App\Support\Media\MediaUrl::preview($media) ?? $media->getUrl();
+                                        $previewUrl = \App\Support\Media\MediaUrl::preview($media, $previewConversion) ?? $originalUrl;
+                                        $hasLocalOriginal = \App\Support\Media\MediaUrl::hasUsableOriginal($media);
+                                        if ($hasLocalOriginal) {
+                                            $previewUrl .= (str_contains($previewUrl, '?') ? '&' : '?').'v='.$cacheBuster;
+                                        }
                                         $isImageMedia = str_starts_with(strtolower((string) $media->mime_type), 'image/');
                                     @endphp
                                     <tr wire:key="media-{{ $collectionName }}-{{ $media->id }}">
@@ -335,12 +350,12 @@
                                         <td class="px-3 py-3 align-top">
                                             <div class="flex flex-wrap justify-end gap-1">
                                                 <button type="button" wire:click="saveMeta({{ $media->id }})" class="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('Save Meta') }}</button>
-                                                @if ($isImageMedia)
+                                                @if ($isImageMedia && $hasLocalOriginal)
                                                     <button
                                                         type="button"
                                                         data-image-edit-open
                                                         data-media-id="{{ $media->id }}"
-                                                        data-image-url="{{ $media->getUrl() }}"
+                                                        data-image-url="{{ $originalUrl }}"
                                                         data-focal-x="{{ $focalX }}"
                                                         data-focal-y="{{ $focalY }}"
                                                         data-crop-enabled="{{ $cropEnabled ? '1' : '0' }}"
@@ -353,10 +368,10 @@
                                                         {{ __('Edit Crop/Focus') }}
                                                     </button>
                                                 @endif
-                                                @if ($mayPromoteToMain && $isImageMedia && $mainCollection !== '' && ! $isMainCollection)
+                                                @if ($mayPromoteToMain && $isImageMedia && $hasLocalOriginal && $mainCollection !== '' && ! $isMainCollection)
                                                     <button type="button" wire:click="copyToMain({{ $media->id }})" class="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('Copy to Main') }}</button>
                                                 @endif
-                                                <a href="{{ $media->getUrl() }}" target="_blank" rel="noopener noreferrer" class="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('Open') }}</a>
+                                                <a href="{{ $originalUrl }}" target="_blank" rel="noopener noreferrer" class="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('Open') }}</a>
                                                 <button
                                                     type="button"
                                                     wire:click="delete({{ $media->id }})"

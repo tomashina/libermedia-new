@@ -1072,6 +1072,33 @@ class OrdersFeatureTest extends TestCase
             ->assertDontSee('AG-FILTER-PAID')->assertDontSee('AG-FILTER-OLD')->assertDontSee('OTHER-ORDER');
     }
 
+    public function test_libermedia_admin_can_search_imported_orders_by_displayed_or_original_number(): void
+    {
+        config(['storefront.brand' => 'libermedia']);
+        $admin = $this->makeUserWithRole('admin');
+        $new = $this->createStatus(code: 'new', name: 'New', isDefault: true);
+        $paid = $this->createStatus(code: 'paid', name: 'Paid', isPaid: true);
+        $order = $this->createOrder($new, $admin, 'OC-HERRERA-6475');
+        $this->createOrder($paid, $admin, 'OC-HERRERA-6476');
+        $this->createOrder($new, $admin, 'LM-20261106-0001');
+
+        foreach (['LM-6475', 'OC-HERRERA-6475', 'LM-647'] as $search) {
+            Livewire::actingAs($admin)->test(OrderManager::class)
+                ->set('status', (string) $new->id)
+                ->set('search', $search)
+                ->assertViewHas('rows', fn ($rows) => $rows->pluck('id')->all() === [$order->id])
+                ->assertSee('LM-6475')->assertDontSee('OC-HERRERA-6475');
+        }
+
+        $this->assertSame('OC-HERRERA-6475', $order->fresh()->order_number);
+        foreach (['show', 'invoice'] as $view) {
+            $this->actingAs($admin)->get('/admin/orders/'.$order->id.'/'.$view)
+                ->assertOk()->assertSee('LM-6475');
+        }
+        $this->actingAs($admin)->get('/account/orders/OC-HERRERA-6475')
+            ->assertOk()->assertSee('LM-6475');
+    }
+
     public function test_sorting_and_filter_changes_reset_order_pagination(): void
     {
         app(SystemSettingsService::class)->put('admin_items_per_page', 5);

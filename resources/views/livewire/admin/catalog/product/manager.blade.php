@@ -138,10 +138,7 @@
                     @forelse ($rows as $row)
                         @php
                             $tr = $row->translations->first();
-                            $mainMedia = $row->getFirstMedia('product_main') ?: $row->getFirstMedia('product_gallery');
-                            $mainThumb = $mainMedia
-                                ? ($mainMedia->hasGeneratedConversion('thumb_100x100') ? $mainMedia->getUrl('thumb_100x100') : $mainMedia->getUrl())
-                                : null;
+                            $mainThumb = \App\Support\Media\LegacyCatalogImage::first($row, ['thumb_100x100', 'card_320w']);
                             $categoryRows = $row->categories->values();
                         @endphp
                         <tr class="align-top">
@@ -234,7 +231,7 @@
                                     >
                                         <x-fa-icon name="pen-to-square" class="h-4 w-4" />
                                     </a>
-                                    @if ($features['catalog_use_options'])
+                                    @if ($features['catalog_use_options'] && ! \App\Support\StorefrontTheme::usesLibermediaBrand())
                                         <a href="{{ route('admin.products.options', ['product' => $row->id, 'locale' => $locale]) }}" class="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">
                                             {{ __('Option Values') }}
                                         </a>

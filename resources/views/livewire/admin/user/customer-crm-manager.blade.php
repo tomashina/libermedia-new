@@ -156,7 +156,7 @@
                         </option>
                         @foreach ($orders as $order)
                             <option value="{{ $order->id }}">
-                                {{ $order->order_number }}
+                                {{ $order->display_order_number }}
                             </option>
                         @endforeach
                     </select>
@@ -239,7 +239,7 @@
                             {{ __(['order' => 'Narudžba', 'quote' => 'Ponuda', 'nothing' => 'Bez narudžbe / ponude', 'open' => 'Bez zabilježenog završetka', 'unknown' => 'Nepotvrđen ishod'][$row->outcome] ?? $row->outcome) }}
                             @if ($row->order && (auth()->user()->isA('superadmin') || auth()->user()->can('sales.orders.view')))
                                 <a class="mt-1 block text-xs text-cyan-700" href="{{ route('admin.orders.show', $row->order) }}">
-                                    {{ $row->order->order_number }}
+                                    {{ $row->order->display_order_number }}
                                 </a>
                             @endif
                             @if ($source === 'visits' && $row->quote_reference)

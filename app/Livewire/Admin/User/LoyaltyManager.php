@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\User\LoyaltyTransaction;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Settings\SystemSettingsService;
+use App\Support\OrderNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -296,6 +297,7 @@ class LoyaltyManager extends Component
             ->when($this->adjustOrderSearch !== '', function (Builder $builder): void {
                 $builder->where(function (Builder $q): void {
                     $q->where('order_number', 'like', '%'.$this->adjustOrderSearch.'%')
+                        ->orWhere('order_number', 'like', '%'.OrderNumber::searchValue($this->adjustOrderSearch).'%')
                         ->orWhere('customer_name', 'like', '%'.$this->adjustOrderSearch.'%')
                         ->orWhere('customer_email', 'like', '%'.$this->adjustOrderSearch.'%');
                 });

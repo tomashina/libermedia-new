@@ -239,6 +239,18 @@ class CheckoutCartAvailabilityTest extends TestCase
         $this->get(route('front.auth.register'))->assertRedirect(route('front.auth.b2b-register'));
     }
 
+    public function test_libermedia_checkout_uses_lm_order_numbers(): void
+    {
+        config(['storefront.brand' => 'libermedia']);
+        $product = $this->product('LM-CHECKOUT');
+        $this->postJson(route('cart.items.store'), ['product_id' => $product->id, 'quantity' => 1])->assertSuccessful();
+        $this->post(route('checkout.store'), $this->checkoutPayload())->assertSessionHasNoErrors()->assertRedirect();
+
+        $order = \App\Models\Sales\Order\Order::query()->sole();
+        $this->assertMatchesRegularExpression('/^LM-\d{8}-\d{4}$/', $order->order_number);
+        $this->assertSame($order->order_number, $order->display_order_number);
+    }
+
     private function product(string $code): Product
     {
         $product = Product::query()->create(['code' => $code, 'sku' => $code, 'base_price' => 10, 'stock_qty' => 100, 'supplier_stock_qty' => 0, 'is_active' => true]);

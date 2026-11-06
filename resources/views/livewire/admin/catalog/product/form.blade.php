@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <form wire:submit="save" class="space-y-6">
+    <div class="space-y-6">
         <div class="admin-panel admin-form-panel p-3 sm:p-4">
             <div class="flex flex-wrap gap-2">
                 <button type="button" wire:click="setTab('content')" class="rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] {{ $activeTab === 'content' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' }}">
@@ -25,9 +25,11 @@
                 <button type="button" wire:click="setTab('media')" class="rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] {{ $activeTab === 'media' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' }}">
                     {{ __('Media') }}
                 </button>
+                @if ($useExtendedProductTabs)
                 <button type="button" wire:click="setTab('energy')" class="rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] {{ $activeTab === 'energy' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' }}">
                     {{ __('Energetske oznake') }}
                 </button>
+                @endif
                 <button type="button" wire:click="setTab('catalog')" class="rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] {{ $activeTab === 'catalog' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' }}">
                     {{ __('Kategorije') }}
                 </button>
@@ -36,15 +38,39 @@
                         {{ __('Atributi') }}
                     </button>
                 @endif
+                @if ($inlineOptionsEditor && $useOptions)
+                    <button type="button" wire:click="setTab('options')" class="rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] {{ $activeTab === 'options' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' }}">
+                        {{ __('Opcije') }}
+                    </button>
+                @endif
+                @if ($useExtendedProductTabs)
                 <button type="button" wire:click="setTab('logistics')" class="rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] {{ $activeTab === 'logistics' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' }}">
                     {{ __('Logistika') }}
                 </button>
+                @endif
+                @if ($useExtendedProductTabs)
                 <button type="button" wire:click="setTab('b2b')" class="rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] {{ $activeTab === 'b2b' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' }}">
                     {{ __('B2B cijene') }}
                 </button>
+                @endif
             </div>
         </div>
 
+        @if ($inlineOptionsEditor && $useOptions && $activeTab === 'options')
+            @if ($productId)
+                <livewire:admin.catalog.product.option-values-manager
+                    :product-id="$productId"
+                    :locale="$form['locale']"
+                    :wire:key="'product-option-values-manager-'.$productId.'-'.$form['locale']"
+                />
+            @else
+                <div class="admin-panel admin-form-panel p-6">
+                    <p class="text-sm text-slate-600">{{ __('Najprije spremite artikl kako biste dodali opcije.') }}</p>
+                    <button type="button" wire:click="setTab('content')" class="mt-3 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">{{ __('Sadržaj') }}</button>
+                </div>
+            @endif
+        @else
+        <form wire:submit="save" class="space-y-6">
         @if ($activeTab === 'content')
         <div class="admin-panel admin-form-panel p-6">
             <p class="admin-section-title">{{ __('Core Data') }}</p>
@@ -194,7 +220,7 @@
         />
         @endif
 
-        @if ($activeTab === 'energy')
+        @if ($useExtendedProductTabs && $activeTab === 'energy')
         @php
             $energyMediaCollections = $this->energyMediaCollections;
             $eprelLookupContext = $this->eprelLookupContext;
@@ -528,7 +554,7 @@
         </div>
         @endif
 
-        @if ($activeTab === 'logistics')
+        @if ($useExtendedProductTabs && $activeTab === 'logistics')
         <div class="admin-panel admin-form-panel p-6">
             <div class="flex items-center justify-between gap-3">
                 <div>
@@ -667,7 +693,7 @@
         </div>
         @endif
 
-        @if ($activeTab === 'b2b')
+        @if ($useExtendedProductTabs && $activeTab === 'b2b')
         <div class="space-y-6">
             <div class="admin-panel admin-form-panel p-6">
                 <div class="flex items-center justify-between gap-3">
@@ -968,5 +994,7 @@
                 {{ __('Cancel') }}
             </button>
         </div>
-    </form>
+        </form>
+        @endif
+    </div>
 </div>

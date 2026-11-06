@@ -40,7 +40,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('Sales / Orders') }}</p>
-                <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{{ __('Order') }} {{ $order->order_number }}</h1>
+                <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{{ __('Order') }} {{ $order->display_order_number }}</h1>
                 <p class="mt-2 text-sm text-slate-600">{{ __('Review snapshot data, adjust status, and keep timeline notes.') }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">

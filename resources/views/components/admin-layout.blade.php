@@ -1188,6 +1188,7 @@
                 </div>
 
                 @php
+                    $isLibermediaAdmin = \App\Support\StorefrontTheme::usesLibermediaBrand($adminBrandName);
                     $catalogUseBlog = app(\App\Services\Catalog\CatalogFeatureService::class)->useBlog();
                     $catalogUseApi = app(\App\Services\Catalog\CatalogFeatureService::class)->useApi();
                     $catalogUseAttributes = app(\App\Services\Catalog\CatalogFeatureService::class)->useAttributes();
@@ -1245,6 +1246,7 @@
                         auth()->user()->isA('superadmin')
                         || auth()->user()->can('integrations.media.manage')
                     );
+                    $showIntegrationsMenu = ! $isLibermediaAdmin && ($canManageEprel || $canManageStock || $canManageEracuni || $canManageSpreadsheet || $canManageMedia);
                     $settingsOpen = request()->routeIs('admin.settings.*') || request()->routeIs('admin.shipping.*');
                     $settingsLocalOpen = request()->routeIs('admin.settings.local.*') || request()->routeIs('admin.shipping.*');
                     $settingsSystemOpen = request()->routeIs('admin.settings.system.*');
@@ -1267,7 +1269,7 @@
                         auth()->user()->isA('superadmin')
                         || auth()->user()->can('settings.api.manage')
                     );
-                    $showSettingsApiMenu = $canManageApiSettings && $catalogUseApi;
+                    $showSettingsApiMenu = ! $isLibermediaAdmin && $canManageApiSettings && $catalogUseApi;
                     $usersListActive = request()->routeIs('admin.users') || request()->routeIs('admin.users.edit') || request()->routeIs('admin.users.show');
                     $usersB2BActive = request()->routeIs('admin.users.b2b');
                     $usersStatisticsActive = request()->routeIs('admin.users.statistics');
@@ -1298,7 +1300,7 @@
                         'options' => $catalogUseOptions && $canAdminAbility('catalog.options.view'),
                         'manufacturers' => $catalogUseManufacturers && $canAdminAbility('catalog.manufacturers.view'),
                         'actions' => $catalogUseActions && $canAdminAbility('catalog.actions.view'),
-                        'b2b-prices' => ! config('commerce.b2c_only') && $canAdminAbility('catalog.b2b_prices.view'),
+                        'b2b-prices' => ! $isLibermediaAdmin && ! config('commerce.b2c_only') && $canAdminAbility('catalog.b2b_prices.view'),
                     ];
                     $contentLinks = [
                         'blog' => $catalogUseBlog && $canAdminAbility('content.blog.view'),
@@ -1307,8 +1309,8 @@
                         'comments' => $canAdminAbility('content.comments.view'),
                         'blocks' => $canAdminAbility('content.blocks.view'),
                         'navigation' => $canAdminAbility('content.navigation.view'),
-                        'supplier_catalogs' => $canAdminAbility('content.supplier_catalogs.manage'),
-                        'references' => $canAdminAbility('content.references.view'),
+                        'supplier_catalogs' => ! $isLibermediaAdmin && $canAdminAbility('content.supplier_catalogs.manage'),
+                        'references' => ! $isLibermediaAdmin && $canAdminAbility('content.references.view'),
                     ];
                     $localSettingResources = array_filter([
                         'payment-methods' => __('admin.layout.menu.payment_methods'),
@@ -1324,7 +1326,7 @@
                     $canViewCatalogSection = in_array(true, $catalogLinks, true);
                     $canViewContentSection = in_array(true, $contentLinks, true);
                     $canViewOrders = $canAdminAbility('sales.orders.view');
-                    $canViewOffers = $canAdminAbility('sales.offers.view');
+                    $canViewOffers = ! $isLibermediaAdmin && $canAdminAbility('sales.offers.view');
                     $canManageAdminAppearance = $canAdminAbility('settings.system.admin_appearance.manage');
                     $canManageUserSettings = $canAdminAbility('settings.user.manage');
                     $canViewSystemSettings = $canManageRuntimeTools || $canManageAdminAppearance || $canManageCatalogFeatures || $canManageStoreSettings;
@@ -1346,7 +1348,7 @@
                         || auth()->user()->can('users.access.manage')
                     );
 
-                    foreach ((array) config('admin_manual.sections', []) as $manualSection) {
+                    foreach ((array) config($isLibermediaAdmin ? 'admin_manual_libermedia.sections' : 'admin_manual.sections', []) as $manualSection) {
                         foreach ((array) ($manualSection['items'] ?? []) as $manualItem) {
                             $routeParametersMatch = true;
                             foreach ((array) ($manualItem['route_parameters'] ?? []) as $parameter => $expectedValue) {
@@ -1738,7 +1740,7 @@
                     </details>
                     @endif
 
-                    @if ($canManageEprel || $canManageStock || $canManageEracuni || $canManageSpreadsheet || $canManageMedia)
+                    @if ($showIntegrationsMenu)
                         <details class="group rounded-lg" @if($integrationsOpen) open @endif>
                             <summary class="sidebar-dropdown-summary flex cursor-pointer list-none items-center justify-between rounded-lg font-medium [&::-webkit-details-marker]:hidden [&::marker]:content-[''] {{ $integrationsOpen ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100' }}">
                                 <span class="flex items-center gap-2">
@@ -1952,7 +1954,7 @@
                                             <span>{{ $isAssignedCustomerView ? __('Moji kupci') : __('admin.layout.menu.users_list') }}</span>
                                         </span>
                                     </a>
-                                    @if (! config('commerce.b2c_only'))
+                                    @if (! $isLibermediaAdmin && ! config('commerce.b2c_only'))
                                     <a
                                         href="{{ route('admin.users.b2b') }}"
                                         class="sidebar-dropdown-link block rounded-lg font-medium {{ $usersB2BActive ? 'is-active-leaf' : 'text-slate-700 hover:bg-slate-100' }}"

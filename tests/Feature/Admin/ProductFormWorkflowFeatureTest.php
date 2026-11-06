@@ -5,11 +5,13 @@ namespace Tests\Feature\Admin;
 use App\Livewire\Admin\Catalog\Product\Form as ProductForm;
 use App\Models\Catalog\Category\Category;
 use App\Models\Catalog\Product\Product;
+use App\Models\Catalog\Product\ProductEnergyDeclaration;
 use App\Models\Catalog\Product\ProductGroupPrice;
 use App\Models\Catalog\Product\ProductPackage;
 use App\Models\Settings\Local\TaxRate;
 use App\Models\User;
 use App\Models\User\CustomerGroup;
+use App\Services\Settings\SystemSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -31,6 +33,77 @@ class ProductFormWorkflowFeatureTest extends TestCase
         $this->get(route('admin.products.edit', $product))
             ->assertOk()->assertSeeLivewire(ProductForm::class);
         $this->get(route('admin.products.edit', 999999))->assertNotFound();
+    }
+
+    public function test_libermedia_uses_inline_options_and_hides_extended_product_tabs(): void
+    {
+        config(['storefront.brand' => 'libermedia']);
+        app(SystemSettingsService::class)->put('catalog_use_options', true);
+        $admin = $this->makeAdmin();
+        $product = $this->makeProduct();
+
+        $component = Livewire::actingAs($admin)->test(ProductForm::class, ['productId' => $product->id])
+            ->assertSeeHtml("setTab('options')");
+        foreach (['energy', 'logistics', 'b2b'] as $tab) {
+            $component->assertDontSeeHtml("setTab('{$tab}')")
+                ->call('setTab', $tab)->assertSet('activeTab', 'content')
+                ->set('activeTab', $tab)->assertSet('activeTab', 'content');
+        }
+
+        $component->call('setTab', 'options')->assertSet('activeTab', 'options')
+            ->assertSee(__('Assigned Option Groups'))
+            ->assertDontSeeHtml('<form wire:submit="save"');
+
+        $this->actingAs($admin)->get(route('admin.products'))->assertOk()
+            ->assertDontSee('href="'.route('admin.products.options', ['product' => $product->id, 'locale' => config('app.locale')]).'"', false)
+            ->assertSee('href="'.route('admin.options', ['locale' => config('app.locale')]).'"', false);
+
+        Livewire::actingAs($admin)->test(ProductForm::class)->call('setTab', 'options')
+            ->assertSee('Najprije spremite artikl kako biste dodali opcije.');
+        app(SystemSettingsService::class)->put('catalog_use_options', false);
+        Livewire::actingAs($admin)->test(ProductForm::class, ['productId' => $product->id])
+            ->assertDontSeeHtml("setTab('options')")
+            ->call('setTab', 'options')->assertSet('activeTab', 'content');
+    }
+
+    public function test_libermedia_content_save_preserves_hidden_logistics_prices_and_energy_data(): void
+    {
+        config(['storefront.brand' => 'libermedia']);
+        $product = $this->makeProduct([
+            'barcode' => '3851111111111', 'unit_of_measure' => 'box',
+            'minimum_order_quantity' => 4, 'order_quantity_step' => 2,
+            'weight_kg' => 2.75, 'length_cm' => 30, 'width_cm' => 20, 'height_cm' => 15,
+            'shipping_labels' => ['fragile'], 'energy_label_required' => true,
+        ]);
+        $package = $product->packages()->create($this->packageRow());
+        $price = $product->groupPrices()->create([
+            'customer_group_id' => $this->makeCustomerGroup()->id,
+            'product_package_id' => $package->id, 'minimum_quantity' => 4,
+            'price' => 18.75, 'currency_code' => 'EUR', 'is_active' => true,
+        ]);
+        $energy = $product->energyDeclarations()->create([
+            'context_code' => 'manual', 'energy_class' => 'A', 'is_primary' => true,
+            'source' => ProductEnergyDeclaration::SOURCE_MANUAL,
+        ]);
+        $hiddenFields = ['barcode', 'unit_of_measure', 'minimum_order_quantity', 'order_quantity_step',
+            'weight_kg', 'length_cm', 'width_cm', 'height_cm', 'shipping_labels', 'energy_label_required'];
+        $before = $product->only($hiddenFields);
+        $packageBefore = $package->refresh()->getRawOriginal();
+        $priceBefore = $price->refresh()->getRawOriginal();
+        $energyBefore = $energy->refresh()->getRawOriginal();
+
+        Livewire::actingAs($this->makeAdmin())->test(ProductForm::class, ['productId' => $product->id])
+            ->set('form.name', 'Updated product')
+            ->set('form.barcode', '')->set('form.weight_kg', null)
+            ->set('form.minimum_order_quantity', 0)->set('form.energy_label_required', false)
+            ->set('packages', [])->set('groupPrices', [])->set('energyDeclarations', [])
+            ->call('save')->assertHasNoErrors();
+
+        $this->assertSame($before, $product->fresh()->only($hiddenFields));
+        $this->assertSame($packageBefore, $package->fresh()->getRawOriginal());
+        $this->assertSame($priceBefore, $price->fresh()->getRawOriginal());
+        $this->assertSame($energyBefore, $energy->fresh()->getRawOriginal());
+        $this->assertDatabaseHas('product_translations', ['product_id' => $product->id, 'name' => 'Updated product']);
     }
 
     public function test_product_editor_requires_the_correct_permissions(): void

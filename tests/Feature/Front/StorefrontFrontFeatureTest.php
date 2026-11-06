@@ -473,6 +473,46 @@ class StorefrontFrontFeatureTest extends TestCase
         );
     }
 
+    public function test_libermedia_withdrawal_links_displayed_order_number_only_for_matching_buyer(): void
+    {
+        config(['storefront.brand' => 'libermedia']);
+        Mail::fake();
+        $order = Order::query()->create([
+            'order_number' => 'OC-HERRERA-6475',
+            'source' => 'opencart_import',
+            'customer_name' => 'Ana Horvat',
+            'customer_email' => 'buyer@example.test',
+        ]);
+
+        foreach (['buyer@example.test' => $order->id, 'other@example.test' => null] as $email => $expectedOrderId) {
+            $review = $this->post('/forma-za-povrat-i-reklamacije', [
+                'full_name' => 'Ana Horvat',
+                'email' => $email,
+                'phone' => '',
+                'address_line' => 'Ilica 1',
+                'postal_code' => '10000',
+                'city' => 'Zagreb',
+                'country_code' => 'HR',
+                'order_number' => 'LM-6475',
+                'contract_date' => now()->subDays(8)->toDateString(),
+                'received_date' => now()->subDays(5)->toDateString(),
+                'items' => 'Toy',
+                'note' => '',
+            ])->assertOk()->assertSee('LM-6475');
+
+            preg_match('/name="draft_token" value="([^"]+)"/', $review->getContent(), $matches);
+            $this->assertNotEmpty($matches[1] ?? null);
+            $this->post('/forma-za-povrat-i-reklamacije/confirm', ['draft_token' => $matches[1]])
+                ->assertRedirect('/forma-za-povrat-i-reklamacije');
+
+            $this->assertDatabaseHas('contract_withdrawals', [
+                'email' => $email,
+                'order_number' => 'LM-6475',
+                'order_id' => $expectedOrderId,
+            ]);
+        }
+    }
+
     public function test_return_request_form_uses_enabled_recaptcha_settings(): void
     {
         app(SystemSettingsService::class)->putMany([

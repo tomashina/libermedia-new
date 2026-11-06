@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Sales\GiftVoucher;
 use App\Models\Sales\GiftVoucher;
 use App\Services\GiftVoucherDeliveryService;
 use App\Services\GiftVoucherService;
+use App\Support\OrderNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -197,7 +198,9 @@ class Manager extends Component
             $match->where('recipient_name', 'like', '%'.$search.'%')->orWhere('recipient_email', 'like', '%'.$search.'%')
                 ->orWhere('buyer_name', 'like', '%'.$search.'%')->orWhere('buyer_email', 'like', '%'.$search.'%')
                 ->orWhere('code_suffix', 'like', '%'.$search.'%')->orWhere('code_hash', hash('sha256', $code))
-                ->orWhereHas('purchaseOrder', fn (Builder $order) => $order->where('order_number', 'like', '%'.$search.'%'));
+                ->orWhereHas('purchaseOrder', fn (Builder $order) => $order->where(fn (Builder $number) => $number
+                    ->where('order_number', 'like', '%'.$search.'%')
+                    ->orWhere('order_number', 'like', '%'.OrderNumber::searchValue($search).'%')));
             if (ctype_digit($id)) {
                 $match->orWhere('id', (int) $id)->orWhere('purchase_order_id', (int) $id);
             }

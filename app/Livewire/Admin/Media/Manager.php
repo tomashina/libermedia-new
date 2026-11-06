@@ -6,7 +6,10 @@ use App\Models\Catalog\Product\Product;
 use App\Models\Content\Blog\BlogPost;
 use App\Models\Content\ContentBlock;
 use App\Services\Content\InstagramPostOEmbedService;
+use App\Support\Media\LegacyCatalogImage;
 use App\Support\Media\MediaProfileRegistry;
+use App\Support\Media\MediaUrl;
+use App\Support\StorefrontTheme;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -480,6 +483,9 @@ class Manager extends Component
     public function getCollectionsProperty(): array
     {
         $collections = MediaProfileRegistry::collectionsForModel($this->modelClass);
+        if ($this->modelClass === Product::class && StorefrontTheme::usesLibermediaBrand()) {
+            return Arr::except($collections, ['product_energy_label', 'product_information_sheet']);
+        }
         $record = $this->record;
 
         if (! $record instanceof ContentBlock) {
@@ -528,6 +534,24 @@ class Manager extends Component
         return MediaProfileRegistry::forModel($this->modelClass);
     }
 
+    /** Preview imported product photos which have no corresponding media record. */
+    public function getImportedProductImagesProperty(): Collection
+    {
+        $record = $this->record;
+        if (! $record instanceof Product || ! StorefrontTheme::usesLibermediaBrand()) {
+            return collect();
+        }
+
+        $productMedia = $record->getMedia('*')->whereIn('collection_name', ['product_main', 'product_gallery']);
+        if ($productMedia->contains(fn (Media $media): bool => MediaUrl::hasUsableSource($media, ['card_720w', 'detail_960x960', 'thumb_100x100']))) {
+            return collect();
+        }
+
+        $represented = $productMedia->map(fn (Media $media): ?string => MediaUrl::preview($media))->filter();
+
+        return LegacyCatalogImage::gallery($record)->diff($represented)->values();
+    }
+
     public function render()
     {
         $mediaByCollection = $this->mediaByCollection;
@@ -546,6 +570,7 @@ class Manager extends Component
             'collections' => $this->collections,
             'modelProfile' => $this->modelProfile,
             'mediaByCollection' => $mediaByCollection,
+            'importedProductImages' => $this->importedProductImages,
             'recordExists' => (bool) $this->record,
             'isDualImageCtaBlock' => $isDualImageCtaBlock,
             'isCategoryEditorialTilesBlock' => $isCategoryEditorialTilesBlock,
@@ -699,9 +724,12 @@ class Manager extends Component
             return null;
         }
 
-        return $record->media()
-            ->whereKey($mediaId)
-            ->first();
+        $query = $record->media()->whereKey($mediaId);
+        if ($record instanceof Product && StorefrontTheme::usesLibermediaBrand()) {
+            $query->whereIn('collection_name', array_keys($this->collections));
+        }
+
+        return $query->first();
     }
 
     private function isImageMedia(Media $media): bool

@@ -6,6 +6,7 @@ use App\Models\Concerns\HasB2BMonetaryPrecision;
 use App\Models\Settings\Local\OrderStatus;
 use App\Models\User;
 use App\Models\User\LoyaltyTransaction;
+use App\Support\OrderNumber;
 use App\Support\OrderStatusClassification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -91,6 +92,11 @@ class Order extends Model
     public function scopeWithoutCancelled(Builder $query): Builder
     {
         return $query->whereDoesntHave('status', fn (Builder $status) => OrderStatusClassification::applyCancelledQuery($status));
+    }
+
+    public function getDisplayOrderNumberAttribute(): string
+    {
+        return OrderNumber::display((string) $this->order_number);
     }
 
     public function commerceCustomerType(): string

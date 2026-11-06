@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Invoice') }} {{ $order->order_number }} | {{ config('app.name') }}</title>
+    <title>{{ __('Invoice') }} {{ $order->display_order_number }} | {{ config('app.name') }}</title>
     @vite(['resources/css/app.css'])
     <style>
         @media print {
@@ -24,7 +24,7 @@
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('Invoice') }}</p>
-                    <h1 class="mt-2 text-2xl font-semibold tracking-tight">#{{ $order->order_number }}</h1>
+                    <h1 class="mt-2 text-2xl font-semibold tracking-tight">#{{ $order->display_order_number }}</h1>
                     <p class="mt-1 text-sm text-slate-600">{{ __('Placed:') }} {{ optional($order->placed_at ?: $order->created_at)->format('Y-m-d H:i') }}</p>
                 </div>
                 <div class="text-right">

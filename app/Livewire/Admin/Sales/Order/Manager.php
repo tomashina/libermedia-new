@@ -6,6 +6,7 @@ use App\Models\Sales\Order\Order;
 use App\Models\Settings\Local\OrderStatus;
 use App\Services\Admin\OrderManagerAccess;
 use App\Services\Settings\SystemSettingsService;
+use App\Support\OrderNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Locked;
@@ -144,8 +145,10 @@ class Manager extends Component
             })
             ->when($this->search !== '', function (Builder $query): void {
                 $needle = '%'.$this->search.'%';
-                $query->where(function (Builder $q) use ($needle): void {
+                $orderNeedle = '%'.OrderNumber::searchValue($this->search).'%';
+                $query->where(function (Builder $q) use ($needle, $orderNeedle): void {
                     $q->where('order_number', 'like', $needle)
+                        ->orWhere('order_number', 'like', $orderNeedle)
                         ->orWhere('customer_name', 'like', $needle)
                         ->orWhere('billing_company', 'like', $needle)
                         ->orWhere('customer_email', 'like', $needle)

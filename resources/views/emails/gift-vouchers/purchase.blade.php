@@ -7,7 +7,7 @@
         <tr><td style="padding:32px">
             <p style="font-size:13px;font-weight:bold;color:#245b42">VAŠ POKLON BON</p>
             <h1 style="font-size:27px;line-height:1.3;margin:12px 0">Hvala što poklanjate igru i učenje.</h1>
-            <p style="line-height:1.7">Zaprimili smo narudžbu <strong>{{ $order->order_number }}</strong> za poklon bon vrijednosti <strong>{{ number_format((float) ($voucher?->initial_amount ?? $order->grand_total), 2, ',', '.') }} €</strong>.</p>
+            <p style="line-height:1.7">Zaprimili smo narudžbu <strong>{{ $order->display_order_number }}</strong> za poklon bon vrijednosti <strong>{{ number_format((float) ($voucher?->initial_amount ?? $order->grand_total), 2, ',', '.') }} €</strong>.</p>
             @if($voucher)<p style="line-height:1.7">Primatelj: <strong>{{ $voucher->recipient_name ?: $voucher->recipient_email }}</strong>@if($voucher->recipient_name) ({{ $voucher->recipient_email }})@endif.</p>@endif
             <p style="line-height:1.7;color:#52675a">{{ $order->paid_at ? 'Uplata je potvrđena. Poklon bon šaljemo primatelju na navedenu e-mail adresu.' : 'Poklon bon šaljemo primatelju nakon potvrde uplate. Kod bona neće biti aktivan prije plaćanja.' }}</p>
             @if($bankTransfer && !$order->paid_at)

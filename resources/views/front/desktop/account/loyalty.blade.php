@@ -74,7 +74,7 @@
                                 <td class="break-words px-4 py-3">
                                     <p class="font-semibold text-slate-900">{{ $typeLabel }}</p>
                                     @if ($entry->order)
-                                        <p class="text-xs text-slate-500">{{ __('ui.account.loyalty.table.order') }}: {{ $entry->order->order_number }}</p>
+                                        <p class="text-xs text-slate-500">{{ __('ui.account.loyalty.table.order') }}: {{ $entry->order->display_order_number }}</p>
                                     @endif
                                     @if ($noteLabel)
                                         <p class="text-xs text-slate-500">{{ $noteLabel }}</p>

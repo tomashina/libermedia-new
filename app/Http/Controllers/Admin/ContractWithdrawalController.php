@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Sales\ContractWithdrawal;
 use App\Services\Front\ContractWithdrawalNotificationService;
+use App\Support\OrderNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -29,6 +30,9 @@ class ContractWithdrawalController extends Controller
                     $nested
                         ->where('reference', 'like', '%'.$search.'%')
                         ->orWhere('order_number', 'like', '%'.$search.'%')
+                        ->orWhereHas('order', fn ($order) => $order->where(fn ($number) => $number
+                            ->where('order_number', 'like', '%'.$search.'%')
+                            ->orWhere('order_number', 'like', '%'.OrderNumber::searchValue($search).'%')))
                         ->orWhere('full_name', 'like', '%'.$search.'%')
                         ->orWhere('email', 'like', '%'.$search.'%');
                 });

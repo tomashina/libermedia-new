@@ -25,6 +25,7 @@ use App\Services\Shipping\ShippingCalculator;
 use App\Services\User\CustomerImpersonationService;
 use App\Services\User\StaffImpersonationService;
 use App\Support\GlsShipping;
+use App\Support\OrderNumber;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -882,9 +883,10 @@ class CheckoutService
     private function nextOrderNumber(): string
     {
         $datePrefix = now()->format('Ymd');
+        $prefix = OrderNumber::checkoutPrefix();
 
         for ($attempt = 0; $attempt < 15; $attempt++) {
-            $candidate = sprintf('AG-%s-%04d', $datePrefix, random_int(1, 9999));
+            $candidate = sprintf('%s-%s-%04d', $prefix, $datePrefix, random_int(1, 9999));
             $exists = Order::query()->where('order_number', $candidate)->exists();
 
             if (! $exists) {
@@ -892,7 +894,7 @@ class CheckoutService
             }
         }
 
-        return sprintf('AG-%s-%s', $datePrefix, strtoupper((string) str()->random(6)));
+        return sprintf('%s-%s-%s', $prefix, $datePrefix, strtoupper((string) str()->random(6)));
     }
 
     private function isBoxNowCode(string $code): bool

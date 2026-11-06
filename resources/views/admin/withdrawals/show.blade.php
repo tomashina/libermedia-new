@@ -37,7 +37,7 @@
                         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Broj narudžbe</dt><dd class="mt-1 text-slate-900">{{ $withdrawal->order_number }}</dd></div>
                         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Povezana narudžba</dt><dd class="mt-1">
                             @if ($withdrawal->order)
-                                <a class="text-cyan-700 hover:underline" href="{{ route('admin.orders.show', $withdrawal->order) }}">{{ $withdrawal->order->order_number }}</a>
+                                <a class="text-cyan-700 hover:underline" href="{{ route('admin.orders.show', $withdrawal->order) }}">{{ $withdrawal->order->display_order_number }}</a>
                             @else
                                 <span class="text-slate-500">Nije automatski povezana</span>
                             @endif

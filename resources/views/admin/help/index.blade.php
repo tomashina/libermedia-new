@@ -1,5 +1,5 @@
 @php
-    $manual = (array) config('admin_manual', []);
+    $manual = (array) config(\App\Support\StorefrontTheme::usesLibermediaBrand() ? 'admin_manual_libermedia' : 'admin_manual', []);
     $manualSections = (array) ($manual['sections'] ?? []);
     $manualEntryCount = collect($manualSections)->sum(fn (array $section): int => count((array) ($section['items'] ?? [])));
     $manualUser = auth()->user();

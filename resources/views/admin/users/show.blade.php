@@ -183,7 +183,7 @@
                                         </td>
                                         <td class="px-2 py-2">
                                             @if ($entry->order)
-                                                <a href="{{ route('admin.orders.show', ['order' => $entry->order->id]) }}" class="text-cyan-700 hover:text-cyan-900">{{ $entry->order->order_number }}</a>
+                                                <a href="{{ route('admin.orders.show', ['order' => $entry->order->id]) }}" class="text-cyan-700 hover:text-cyan-900">{{ $entry->order->display_order_number }}</a>
                                             @else
                                                 -
                                             @endif
@@ -216,7 +216,7 @@
                             @forelse ($recentOrders as $order)
                                 <tr>
                                     <td class="px-2 py-2">
-                                        <a href="{{ route('admin.orders.show', ['order' => $order->id]) }}" class="text-cyan-700 hover:text-cyan-900">{{ $order->order_number }}</a>
+                                        <a href="{{ route('admin.orders.show', ['order' => $order->id]) }}" class="text-cyan-700 hover:text-cyan-900">{{ $order->display_order_number }}</a>
                                     </td>
                                     <td class="px-2 py-2">{{ $order->status?->name ?: '-' }}</td>
                                     <td class="px-2 py-2 text-right">{{ \App\Support\Currency::format((float) $order->grand_total, $order->currency_code) }}</td>

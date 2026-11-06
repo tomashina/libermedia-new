@@ -6,6 +6,24 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class MediaUrl
 {
+    /** Use an existing local image or a validated original catalog reference. */
+    public static function preview(?Media $media, string $conversion = ''): ?string
+    {
+        if (! $media) {
+            return null;
+        }
+
+        if ($url = self::conversionOrNull($media, $conversion)) {
+            return $url;
+        }
+
+        if (self::hasUsableOriginal($media)) {
+            return (string) $media->getUrl();
+        }
+
+        return LegacyCatalogImage::url($media->getCustomProperty('opencart_path'));
+    }
+
     public static function hasUsableOriginal(?Media $media): bool
     {
         if (! $media) {

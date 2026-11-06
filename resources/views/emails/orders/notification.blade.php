@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('mail.orders.mail_title', ['order' => $order_number]) }}</title>
+    <title>{{ __('mail.orders.mail_title', ['order' => $display_order_number]) }}</title>
     <style>
         body { margin:0; padding:0; background:#f3f4f6; font-family:Arial, Helvetica, sans-serif; color:#0f172a; }
         a, a:link, a:visited { color:#0f172a !important; text-decoration:none !important; }
@@ -64,7 +64,7 @@
             <div class="content">
                 <h1 class="title">
                     {{ $variant === 'admin' ? __('mail.orders.heading_admin') : __('mail.orders.heading_customer') }}
-                    #{{ $order_number }}
+                    #{{ $display_order_number }}
                 </h1>
                 <p class="muted">
                     {{ $variant === 'admin' ? __('mail.orders.intro_admin') : __('mail.orders.intro_customer') }}

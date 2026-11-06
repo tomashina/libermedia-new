@@ -72,7 +72,7 @@
                                                 @if (trim((string) $widgetSlot->block->name) !== trim((string) $widgetName))
                                                     {{ $widgetSlot->block->name }} <span aria-hidden="true">·</span>
                                                 @endif
-                                                {{ in_array($widgetSlot->frontend_variant, ['desktop', 'mobile'], true) ? __($widgetSlot->frontend_variant === 'desktop' ? 'Desktop' : 'Mobile') : __('All Devices') }}
+                                                {{ in_array($widgetSlot->frontend_variant, ['desktop', 'mobile'], true) ? ($widgetSlot->frontend_variant === 'desktop' ? 'Računalo' : 'Mobitel') : 'Svi uređaji' }}
                                             </p>
                                         </div>
                                         <div class="flex flex-wrap items-center gap-2">

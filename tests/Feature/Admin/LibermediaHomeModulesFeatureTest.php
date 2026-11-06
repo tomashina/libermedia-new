@@ -18,14 +18,14 @@ class LibermediaHomeModulesFeatureTest extends TestCase
     use RefreshDatabase;
 
     #[DataProvider('homeModules')]
-    public function test_admin_can_edit_and_save_home_module_without_losing_its_frontend_content(
+    public function test_admin_edits_home_module_content_without_changing_its_template(
         string $suffix,
         string $placement,
         string $copy,
         string $sectionClass,
         string $destination
     ): void {
-        config(['app.locale' => 'hr', 'app.fallback_locale' => 'hr', 'storefront_cache.enabled' => false]);
+        config(['app.locale' => 'hr', 'app.fallback_locale' => 'hr', 'storefront.brand' => 'libermedia', 'storefront_cache.enabled' => false]);
         app()->setLocale('hr');
         $user = User::factory()->create();
         Bouncer::role()->firstOrCreate(['name' => 'admin']);
@@ -35,61 +35,61 @@ class LibermediaHomeModulesFeatureTest extends TestCase
         $path = resource_path('views/front/content-blocks/instances/'.$code.'.blade.php');
         $this->assertFileExists($path);
         $original = File::get($path);
-        $compiledPath = app('blade.compiler')->getCompiledPath($path);
+        $definition = config('libermedia_widgets.'.$code);
+        $this->assertIsArray($definition);
 
-        try {
-            $block = ContentBlock::query()->create([
-                'code' => $code,
-                'name' => 'Liber Media '.$suffix,
-                'type' => 'rich_text',
-                'is_active' => true,
-            ]);
-            $block->translations()->create(['locale' => 'hr', 'title' => 'Naslov modula', 'body_html' => null]);
-            $block->slots()->create([
-                'placement' => $placement,
-                'frontend_variant' => 'all',
-                'sort_order' => 10,
-                'is_active' => true,
-            ]);
+        $block = ContentBlock::query()->create([
+            'code' => $code,
+            'name' => 'Liber Media '.$suffix,
+            'type' => 'rich_text',
+            'is_active' => true,
+            'payload' => ['retained' => 'block metadata'],
+        ]);
+        $block->translations()->create(['locale' => 'hr', 'title' => 'Old administrative label', 'body_html' => null, 'payload' => ['retained' => 'translation metadata']]);
+        $slot = $block->slots()->create([
+            'placement' => $placement,
+            'frontend_variant' => 'all',
+            'sort_order' => 10,
+            'is_active' => true,
+        ]);
 
-            $form = Livewire::actingAs($user)->test(BlockForm::class, ['blockId' => $block->id]);
-            $form->assertSet('form.template_body', $original);
-            $this->assertStringContainsString('<section', $form->get('form.template_body'));
-            $this->assertStringContainsString($copy, $form->get('form.template_body'));
-
-            // Exercise a real content edit, followed by the same save an editor uses.
-            $editedCopy = $copy.' – uređeno u administraciji';
-            $editedTemplate = str_replace($copy, $editedCopy, $original);
-            $form->set('form.template_body', $editedTemplate)
-                ->call('save')
-                ->assertHasNoErrors()
-                ->assertRedirect(route('admin.content.blocks'));
-
-            $this->assertNull($block->fresh()->translations()->where('locale', 'hr')->firstOrFail()->body_html);
-            $this->assertStringContainsString($editedCopy, File::get($path));
-            Livewire::actingAs($user)->test(BlockForm::class, ['blockId' => $block->id])
-                ->assertSet('form.template_body', File::get($path));
-
-            // Render through the public placement resolver, with no database HTML fallback.
-            File::delete($compiledPath);
-            $html = view('components.content-placement', [
-                'items' => app(ContentBlockResolver::class)->forPlacement($placement, 'hr'),
-                'storeSettings' => [],
-            ])->render();
-            $this->assertStringContainsString('class="'.$sectionClass.'"', $html);
-            $this->assertStringContainsString($editedCopy, $html);
-            $this->assertStringContainsString('href="'.$destination.'"', $html);
-            if ($suffix === 'benefits') {
-                $this->assertStringContainsString('Zaštita kupca', $html);
-                $this->assertStringContainsString('Zdravstvena provjerenost', $html);
-                $this->assertStringContainsString('Držimo do sigurnosti vaše djece', $html);
-                $this->assertSame(4, substr_count($html, '<strong>'));
+        $field = null;
+        foreach ($definition['content_defaults'] ?? [] as $key => $value) {
+            if ($value === $copy) {
+                $field = 'form.'.$key;
             }
-        } finally {
-            // Admin saves write repository templates; always restore their exact bytes.
-            File::put($path, $original);
-            File::delete($compiledPath);
         }
+        foreach ($definition['fields'] ?? [] as $key => $value) {
+            if (($value['default'] ?? null) === $copy) {
+                $field = 'form.libermedia.'.$key;
+            }
+        }
+        $this->assertNotNull($field, 'The original public copy must have an editable field.');
+        $editedCopy = $copy.' – uređeno u administraciji';
+        Livewire::actingAs($user)->test(BlockForm::class, ['blockId' => $block->id])
+            ->assertSet($field, $copy)
+            ->assertDontSee('wire:model="form.template_body"', false)
+            ->set($field, $editedCopy)->call('save')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('admin.content.blocks'));
+
+        $this->assertSame($original, File::get($path));
+        $this->assertSame('block metadata', data_get($block->fresh()->payload, 'retained'));
+        $translation = $block->fresh()->translations()->where('locale', 'hr')->firstOrFail();
+        $this->assertSame('translation metadata', data_get($translation->payload, 'retained'));
+        $this->assertArrayHasKey('libermedia', $translation->payload);
+        $this->assertNull($translation->body_html);
+        $this->assertSame($placement, $slot->fresh()->placement);
+        Livewire::actingAs($user)->test(BlockForm::class, ['blockId' => $block->id])
+            ->assertSet($field, $editedCopy);
+
+        $html = view('components.content-placement', [
+            'items' => app(ContentBlockResolver::class)->forPlacement($placement, 'hr'),
+            'storeSettings' => [],
+        ])->render();
+        $this->assertStringContainsString('class="'.$sectionClass.'"', $html);
+        $this->assertStringContainsString($editedCopy, $html);
+        $this->assertStringContainsString('href="'.$destination.'"', $html);
     }
 
     public static function homeModules(): array

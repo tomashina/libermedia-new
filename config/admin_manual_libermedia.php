@@ -34,6 +34,23 @@ $overrides = [
             'Za svaku kombinaciju provjerite SKU, zalihu i eventualnu posebnu cijenu pa spremite.',
         ],
     ],
+    'blokovi' => [
+        'purpose' => 'Uređivanje widgeta početne stranice i podnožja: promotivne ponude, proizvodi, vrtići, garancija i prednosti kupnje.',
+        'steps' => [
+            'U Sadržaj / Blokovi pronađite widget u rasporedu početne stranice ili podnožja.',
+            'Gumbom Uredi otvorite tekstove, fotografije i poveznice tog widgeta.',
+            'Kod proizvoda odaberite artikle i složite njihov redoslijed.',
+            'Na popisu uključite ili isključite widget, a strelicama promijenite redoslijed unutar njegove pozicije.',
+            'Spremite sadržaj i otvorite pregled webshopa da provjerite rezultat.',
+        ],
+        'fields' => [
+            ['name' => 'Tekstovi i gumbi', 'description' => 'Naslovi, opisi i poveznice prikazane na webshopu.'],
+            ['name' => 'Fotografije', 'description' => 'Pregled postojeće slike, odabir nove fotografije i opis slike.'],
+            ['name' => 'Vidljivost i redoslijed', 'description' => 'Uključivanje widgeta i njegov položaj unutar pripadajuće pozicije.'],
+            ['name' => 'Odabrani artikli', 'description' => 'Proizvodi i njihov redoslijed u kolekciji ili akcijskoj ponudi.'],
+        ],
+        'warning' => 'Redoslijed se mijenja unutar iste pozicije. Prednosti kupnje nalaze se u podnožju stranice.',
+    ],
     'lista-korisnika' => [
         'purpose' => 'Pretraga i pregled korisničkih računa, profila, adresa, grupa, narudžbi i aktivnosti.',
     ],

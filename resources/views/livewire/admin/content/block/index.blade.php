@@ -2,9 +2,11 @@
     <div class="admin-panel admin-search-panel p-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <h1 class="text-xl font-semibold tracking-tight">{{ __('Content Blocks') }}</h1>
-                <p class="mt-1 text-sm text-slate-600">{{ __('Unified builder: block, primary slot, and selected items.') }}</p>
-                <p class="mt-2 text-xs text-slate-500">{{ __('Items per page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
+                <h1 class="text-xl font-semibold tracking-tight">{{ $libermediaManager ? 'Widgeti i blokovi' : __('Content Blocks') }}</h1>
+                <p class="mt-1 text-sm text-slate-600">{{ $libermediaManager ? 'Uredite sadržaj, redoslijed i vidljivost blokova početne stranice.' : __('Unified builder: block, primary slot, and selected items.') }}</p>
+                @if (! $libermediaManager || $rows->total() > 0)
+                    <p class="mt-2 text-xs text-slate-500">{{ __('Items per page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
+                @endif
             </div>
             <div class="flex w-full gap-2 sm:w-auto sm:items-end">
                 <div class="w-full sm:w-80">
@@ -13,25 +15,90 @@
                         id="content-block-search"
                         type="text"
                         wire:model.live.debounce.300ms="search"
-                        placeholder="{{ __('Code, name or type...') }}"
+                        placeholder="{{ $libermediaManager ? 'Pretraži blokove...' : __('Code, name or type...') }}"
                         class="admin-search-input w-full rounded-xl border px-3 py-2 text-sm"
                     />
                 </div>
                 <div class="w-full sm:w-44">
                     <label for="content-block-surface" class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Surface') }}</label>
-                    <select id="content-block-surface" wire:model="surface" data-tom-select data-tom-no-search="1" class="admin-select w-full rounded-xl border px-3 py-2 text-sm">
+                    <select id="content-block-surface" wire:model.live="surface" data-tom-select data-tom-no-search="1" class="admin-select w-full rounded-xl border px-3 py-2 text-sm">
                         <option value="all">{{ __('All') }}</option>
                         <option value="desktop">{{ __('Desktop') }}</option>
                         <option value="mobile">{{ __('Mobile') }}</option>
                     </select>
                 </div>
-                <a href="{{ route('admin.content.blocks.create') }}" class="inline-flex h-10 items-center rounded-xl bg-cyan-700 px-4 text-sm font-semibold text-white hover:bg-cyan-800">{{ __('Create') }}</a>
+                @if ($canCreateBlocks)
+                <a href="{{ route('admin.content.blocks.create') }}" class="inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold {{ $libermediaManager ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50' : 'bg-cyan-700 text-white hover:bg-cyan-800' }}">{{ __('Create') }}</a>
+                @endif
             </div>
         </div>
     </div>
 
-    <div class="admin-panel admin-panel-soft p-5">
-        <h2 class="admin-section-title">{{ __('Items') }}</h2>
+    @if ($libermediaManager)
+        @php
+            $widgetSections = [
+                ['heading' => 'Početna — raspored blokova', 'key' => 'home', 'groups' => $homeWidgetGroups],
+                ['heading' => 'Podnožje — blokovi', 'key' => 'footer', 'groups' => collect([
+                    ['label' => 'Prednosti kupnje', 'slots' => $footerWidgetSlots],
+                ])->filter(fn ($group) => $group['slots']->isNotEmpty())],
+            ];
+        @endphp
+        @foreach ($widgetSections as $widgetSection)
+            @if ($widgetSection['groups']->isNotEmpty())
+                <section class="admin-panel admin-form-panel p-5" data-libermedia-widget-manager="{{ $widgetSection['key'] }}">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-900">{{ $widgetSection['heading'] }}</h2>
+                            <p class="mt-1 text-sm text-slate-600">Uključite blok ili otvorite uređivanje. Strelice mijenjaju redoslijed unutar iste pozicije.</p>
+                        </div>
+                        <a href="{{ route('home') }}" target="_blank" rel="noopener" class="rounded-lg border border-cyan-200 px-3 py-2 text-sm font-semibold text-cyan-800">Otvori početnu ↗</a>
+                    </div>
+                    @foreach ($widgetSection['groups'] as $widgetGroup)
+                        <div class="mt-5">
+                            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $widgetGroup['label'] }}</h3>
+                            <ol class="divide-y divide-slate-200 rounded-xl border border-slate-200">
+                                @foreach ($widgetGroup['slots'] as $widgetSlot)
+                                    @php
+                                        $widgetActive = $widgetSlot->is_active && $widgetSlot->block->is_active;
+                                        $widgetPosition = $homeWidgetPositions[$widgetSlot->id];
+                                        $widgetDefinition = \App\Support\LibermediaWidgetSettings::definition((string) $widgetSlot->block->code);
+                                        $widgetName = $widgetDefinition['label'] ?? $widgetSlot->block->name;
+                                    @endphp
+                                    <li class="flex flex-wrap items-center gap-3 px-4 py-3" wire:key="libermedia-widget-{{ $widgetSlot->id }}">
+                                        <span class="w-6 text-sm font-semibold text-slate-400">{{ $widgetPosition }}</span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="font-semibold text-slate-900">{{ $widgetName }}</p>
+                                            <p class="mt-1 text-xs text-slate-500">
+                                                @if (trim((string) $widgetSlot->block->name) !== trim((string) $widgetName))
+                                                    {{ $widgetSlot->block->name }} <span aria-hidden="true">·</span>
+                                                @endif
+                                                {{ in_array($widgetSlot->frontend_variant, ['desktop', 'mobile'], true) ? __($widgetSlot->frontend_variant === 'desktop' ? 'Desktop' : 'Mobile') : __('All Devices') }}
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            @if ($canUpdateBlocks)
+                                                <button type="button" wire:click="moveHomeWidget({{ $widgetSlot->id }}, 'up')" @disabled($widgetPosition === 1) aria-label="Pomakni gore: {{ $widgetName }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-30">↑</button>
+                                                <button type="button" wire:click="moveHomeWidget({{ $widgetSlot->id }}, 'down')" @disabled($widgetPosition === $homeWidgetCounts[$widgetSlot->id]) aria-label="Pomakni dolje: {{ $widgetName }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-30">↓</button>
+                                                <button type="button" wire:click="toggleHomeWidget({{ $widgetSlot->id }})" aria-label="Promijeni vidljivost: {{ $widgetName }}" aria-pressed="{{ $widgetActive ? 'true' : 'false' }}" class="rounded-lg border px-3 py-2 text-xs font-semibold {{ $widgetActive ? 'border-cyan-200 bg-cyan-50 text-cyan-800' : 'border-slate-300 bg-slate-100 text-slate-500' }}">{{ $widgetActive ? 'Uključen' : 'Isključen' }}</button>
+                                            @else
+                                                <span class="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">{{ $widgetActive ? 'Uključen' : 'Isključen' }}</span>
+                                            @endif
+                                            @include('livewire.admin.content.block.partials.index-actions', ['actionBlock' => $widgetSlot->block])
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </div>
+                    @endforeach
+                </section>
+            @endif
+        @endforeach
+    @endif
+
+    @if (! $libermediaManager || $rows->total() > 0)
+    <div class="admin-panel admin-panel-soft p-5" @if ($libermediaManager) data-libermedia-other-blocks @endif>
+        <h2 class="admin-section-title">{{ $libermediaManager ? 'Ostali blokovi' : __('Items') }}</h2>
+        @if ($libermediaManager)<p class="mt-1 text-sm text-slate-600">Blokovi bez pozicije na početnoj ili s dodatnim prikazom na drugim stranicama.</p>@endif
 
         <div class="mt-4 overflow-x-auto">
             <table class="admin-items-table min-w-full text-sm">
@@ -53,7 +120,9 @@
                     @forelse ($rows as $row)
                         @php
                             $title = $row->translations->first()?->title;
-                            $primarySlot = $row->slots->first();
+                            $otherSlots = $libermediaManager ? $row->slots->filter(fn ($slot) => ! array_key_exists($slot->placement, $managedPlacements)
+                                || trim((string) $slot->target_type) !== '' || trim((string) $slot->target_ref) !== '') : $row->slots;
+                            $primarySlot = $otherSlots->first(fn ($slot) => $surface === 'all' || in_array($slot->frontend_variant, [null, 'all', $surface], true)) ?? $otherSlots->first();
                         @endphp
                         <tr>
                             <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ $row->code }}</td>
@@ -72,11 +141,11 @@
                             </td>
                             <td class="px-3 py-2 text-xs text-slate-700">
                                 @php
-                                    $surface = (string) ($primarySlot?->frontend_variant ?? 'all');
+                                    $rowSurface = (string) ($primarySlot?->frontend_variant ?? 'all');
                                 @endphp
-                                @if ($surface === 'desktop')
+                                @if ($rowSurface === 'desktop')
                                     {{ __('Desktop') }}
-                                @elseif ($surface === 'mobile')
+                                @elseif ($rowSurface === 'mobile')
                                     {{ __('Mobile') }}
                                 @else
                                     {{ __('All') }}
@@ -94,9 +163,17 @@
                             </td>
                             <td class="px-3 py-2 text-right">
                                 <div class="inline-flex items-center gap-1">
+                                    @if ($libermediaManager)
+                                        @include('livewire.admin.content.block.partials.index-actions', ['actionBlock' => $row])
+                                    @else
                                     <button type="button" wire:click="openPreview({{ $row->id }})" class="rounded-lg border border-cyan-200 px-2 py-1 text-xs font-semibold text-cyan-800 hover:bg-cyan-50">{{ __('Preview') }}</button>
+                                    @if ($canUpdateBlocks)
                                     <a href="{{ route('admin.content.blocks.edit', ['block' => $row->id]) }}" class="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('Edit') }}</a>
+                                    @endif
+                                    @if ($canDeleteBlocks)
                                     <button type="button" wire:click="delete({{ $row->id }})" wire:confirm="{{ __('Delete this content block?') }}" class="rounded-lg border border-rose-200 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50">{{ __('Delete') }}</button>
+                                    @endif
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -113,6 +190,11 @@
             {{ $rows->links() }}
         </div>
     </div>
+
+    @endif
+    @if ($libermediaManager && $rows->total() === 0 && $homeWidgetGroups->isEmpty() && $footerWidgetSlots->isEmpty())
+        <div class="admin-panel p-6 text-sm text-slate-500" role="status">{{ $search !== '' || $surface !== 'all' ? 'Nema blokova za odabrane filtre.' : __('No content blocks yet.') }}</div>
+    @endif
 
     @if ($previewBlock)
         @php

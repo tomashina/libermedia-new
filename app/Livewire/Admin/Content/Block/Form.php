@@ -9,14 +9,20 @@ use App\Models\Content\Blog\BlogPost;
 use App\Models\Content\ContentBlock;
 use App\Services\Content\ContentBlockResolver;
 use App\Services\Content\FeaturedCategoriesService;
+use App\Support\LibermediaWidgetSettings;
+use App\Support\StorefrontTheme;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Form extends Component
 {
+    use WithFileUploads;
+
     private const CATEGORY_PRODUCT_SORTS = [
         'category_order',
         'price_asc',
@@ -52,7 +58,16 @@ class Form extends Component
         'blogs' => 'blog',
     ];
 
+    #[Locked]
     public ?int $blockId = null;
+
+    #[Locked]
+    public string $libermediaWidgetCode = '';
+
+    #[Locked]
+    public string $libermediaWidgetType = '';
+
+    public array $libermediaImageUploads = [];
 
     public array $form = [];
 
@@ -127,9 +142,27 @@ class Form extends Component
         return (bool) $this->blockId;
     }
 
+    public function getIsLibermediaWidgetProperty(): bool
+    {
+        return StorefrontTheme::usesLibermediaBrand()
+            && LibermediaWidgetSettings::definition($this->libermediaWidgetCode) !== [];
+    }
+
+    public function getLibermediaFieldsProperty(): array
+    {
+        return $this->isLibermediaWidget ? LibermediaWidgetSettings::fields($this->libermediaWidgetCode) : [];
+    }
+
+    public function getLibermediaDefinitionProperty(): array
+    {
+        return $this->isLibermediaWidget ? LibermediaWidgetSettings::definition($this->libermediaWidgetCode) : [];
+    }
+
     public function getCurrentItemTypeProperty(): ?string
     {
-        return $this->itemTypeForBlockType((string) ($this->form['type'] ?? ''));
+        return $this->itemTypeForBlockType($this->isLibermediaWidget
+            ? $this->libermediaWidgetType
+            : (string) ($this->form['type'] ?? ''));
     }
 
     public function getIsItemBlockProperty(): bool
@@ -246,6 +279,12 @@ class Form extends Component
 
     public function updatedFormType(string $type): void
     {
+        if ($this->isLibermediaWidget) {
+            $this->form['type'] = $this->libermediaWidgetType;
+
+            return;
+        }
+
         if (! array_key_exists($type, $this->types)) {
             return;
         }
@@ -310,6 +349,10 @@ class Form extends Component
 
     public function loadTemplatePreset(): void
     {
+        if ($this->isLibermediaWidget) {
+            return;
+        }
+
         $type = (string) ($this->form['type'] ?? 'banner');
         $this->form['template_body'] = $this->defaultTemplateForType($type);
         $this->dispatch('content-block-template-loaded', template: $this->form['template_body']);
@@ -353,6 +396,14 @@ class Form extends Component
         ));
     }
 
+    public function clearLibermediaSelectedItem(int $id): void
+    {
+        if ($this->isLibermediaWidget) {
+            $this->authorizeLibermediaWidget();
+            $this->removeSelectedItem($id);
+        }
+    }
+
     public function moveSelectedItemUp(int $index): void
     {
         $rows = array_values(array_map(static fn ($value): int => (int) $value, (array) ($this->form['selected_item_ids'] ?? [])));
@@ -377,6 +428,19 @@ class Form extends Component
 
     public function save()
     {
+        if ($this->blockId && StorefrontTheme::usesLibermediaBrand()) {
+            $block = ContentBlock::query()->with('translations')->findOrFail($this->blockId);
+            if (LibermediaWidgetSettings::definition((string) $block->code) !== []) {
+                return $this->saveLibermediaWidget($block);
+            }
+        }
+        if (StorefrontTheme::usesLibermediaBrand()
+            && LibermediaWidgetSettings::definition((string) ($this->form['code'] ?? '')) !== []) {
+            $this->addError('form.code', __('Ova je oznaka rezervirana za postojeći widget.'));
+
+            return null;
+        }
+
         $validated = $this->validate($this->rules(), [
             'form.slot_ends_at.after_or_equal' => __('End date must be after or equal to start date.'),
         ]);
@@ -597,6 +661,162 @@ class Form extends Component
         return view('livewire.admin.content.block.form');
     }
 
+    public function clearLibermediaImage(string $key): void
+    {
+        if (($this->libermediaFields[$key]['type'] ?? '') !== 'image') {
+            return;
+        }
+
+        $this->authorizeLibermediaWidget();
+        $this->form['libermedia'][$key] = '';
+        unset($this->libermediaImageUploads[$key]);
+    }
+
+    private function saveLibermediaWidget(ContentBlock $block)
+    {
+        $this->authorizeLibermediaWidget();
+        $this->libermediaWidgetCode = (string) $block->code;
+        $this->libermediaWidgetType = (string) $block->type;
+        $fields = $this->libermediaFields;
+        $safeUrl = static function (bool $image = false): \Closure {
+            return static function (string $attribute, mixed $value, \Closure $fail) use ($image): void {
+                if (is_scalar($value) && trim((string) $value) !== ''
+                    && LibermediaWidgetSettings::safeUrl($value, $image) === '') {
+                    $fail(__('Unesite lokalnu poveznicu ili valjanu HTTPS adresu.'));
+                }
+            };
+        };
+        $rules = [
+            'form.name' => ['required', 'string', 'max:180'],
+            'form.is_active' => ['boolean'],
+            'form.locale' => ['required', 'string', 'max:12'],
+            'form.title' => ['nullable', 'string', 'max:255'],
+            'form.subtitle' => ['nullable', 'string', 'max:6000'],
+            'form.cta_label' => ['nullable', 'string', 'max:120'],
+            'form.cta_url' => ['nullable', 'string', 'max:2048', $safeUrl()],
+            'form.items_limit' => ['required', 'integer', 'min:1', 'max:50'],
+            'form.selected_item_ids' => ['array'],
+            'form.selected_item_ids.*' => ['integer', 'min:1', 'distinct'],
+            'form.slot_placement' => ['required', Rule::in(array_keys($this->placements))],
+            'form.slot_frontend_variant' => ['required', Rule::in(array_keys($this->frontendVariants))],
+            'form.slot_sort_order' => ['required', 'integer', 'min:0'],
+            'form.slot_is_active' => ['boolean'],
+            'form.slot_starts_at' => ['nullable', 'date'],
+            'form.slot_ends_at' => ['nullable', 'date', 'after_or_equal:form.slot_starts_at'],
+            'form.libermedia' => $fields !== [] ? ['array:'.implode(',', array_keys($fields))] : ['array', 'max:0'],
+        ];
+        $imageKeys = [];
+        foreach ($fields as $key => $field) {
+            $type = $field['type'] ?? 'text';
+            $rules['form.libermedia.'.$key] = match ($type) {
+                'checkbox' => ['boolean'],
+                'icon' => ['nullable', 'string', 'max:80', 'regex:/^[a-z0-9-]+$/'],
+                'url', 'image' => ['nullable', 'string', 'max:2048', $safeUrl($type === 'image')],
+                default => ['nullable', 'string', 'max:'.($type === 'textarea' ? 12000 : 1000)],
+            };
+            if ($type === 'image') {
+                $imageKeys[] = $key;
+                $rules['libermediaImageUploads.'.$key] = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
+            }
+        }
+        $rules['libermediaImageUploads'] = $imageKeys !== [] ? ['array:'.implode(',', $imageKeys)] : ['array', 'max:0'];
+        $validated = $this->validate($rules);
+        $values = $validated['form'];
+        $itemType = $this->itemTypeForBlockType((string) $block->type);
+        $selectedIds = array_values($values['selected_item_ids']);
+        if ($itemType !== null && ($selectedIds === []
+            || count($this->validIdsForItemType($itemType, $selectedIds)) !== count($selectedIds))) {
+            $this->addError('form.selected_item_ids', __('Odaberite barem jedan valjani artikl.'));
+
+            return null;
+        }
+
+        $translation = $block->translations->firstWhere('locale', $values['locale']);
+        $payload = is_array($translation?->payload) ? $translation->payload : [];
+        $widgetValues = is_array($payload['libermedia'] ?? null) ? $payload['libermedia'] : [];
+        foreach ($fields as $key => $field) {
+            $value = array_key_exists($key, $values['libermedia'])
+                ? $values['libermedia'][$key]
+                : ($field['default'] ?? '');
+            $widgetValues[$key] = ($field['type'] ?? '') === 'checkbox' ? (bool) $value : trim((string) $value);
+        }
+        foreach ($this->libermediaImageUploads as $key => $upload) {
+            if ($upload && in_array($key, $imageKeys, true)) {
+                $widgetValues[$key] = '/storage/'.$upload->store('libermedia-widgets', 'public');
+            }
+        }
+        $payload['libermedia'] = $widgetValues;
+        if ($itemType !== null) {
+            $payload['items_limit'] = (int) $values['items_limit'];
+        }
+        $contentFields = (array) ($this->libermediaDefinition['content_fields'] ?? ['title', 'subtitle', 'cta_label', 'cta_url']);
+        $translationData = ['payload' => $payload];
+        foreach (array_intersect(['title', 'subtitle', 'cta_label', 'cta_url'], $contentFields) as $key) {
+            $translationData[$key] = trim((string) ($values[$key] ?? ''));
+        }
+        $userId = auth()->id();
+
+        DB::transaction(function () use ($block, $values, $translationData, $itemType, $selectedIds, $userId): void {
+            // Widget content lives in the database; its Git-tracked template and identity stay fixed.
+            $block->update(['name' => trim($values['name']), 'is_active' => (bool) $values['is_active'], 'updated_by' => $userId]);
+            $block->translations()->updateOrCreate(['locale' => $values['locale']], $translationData);
+            $slotData = collect($values)->only(['slot_placement', 'slot_frontend_variant', 'slot_sort_order', 'slot_is_active', 'slot_starts_at', 'slot_ends_at'])
+                ->mapWithKeys(fn ($value, $key) => [substr($key, 5) => in_array($key, ['slot_starts_at', 'slot_ends_at'], true) ? ($value ?: null) : $value])->all();
+            $slotData['updated_by'] = $userId;
+            $slot = $block->slots()->orderBy('sort_order')->orderBy('id')->first();
+            if ($slot) {
+                $slot->update($slotData);
+            } else {
+                $block->slots()->create($slotData + ['created_by' => $userId]);
+            }
+            if ($itemType !== null) {
+                $items = $block->items()->where('item_type', $itemType)->get()->keyBy('item_id');
+                $block->items()->where('item_type', $itemType)->whereNotIn('item_id', $selectedIds)->delete();
+                foreach ($selectedIds as $index => $id) {
+                    if ($items->has($id)) {
+                        $items->get($id)->update(['sort_order' => $index]);
+                    } else {
+                        $block->items()->create(['item_type' => $itemType, 'item_id' => $id, 'sort_order' => $index]);
+                    }
+                }
+            }
+            activity('content_blocks')->performedOn($block)->causedBy(auth()->user())->event('updated')
+                ->withProperties(['code' => $block->code, 'type' => $block->type, 'item_count' => count($selectedIds)])
+                ->log('Libermedia widget content updated.');
+        });
+        ContentBlockResolver::bumpCacheVersion();
+
+        return redirect()->route('admin.content.blocks')->with('notify', ['type' => 'success', 'message' => __('Widget je spremljen.')]);
+    }
+
+    private function loadLibermediaWidget(ContentBlock $block, mixed $translation): void
+    {
+        if (! StorefrontTheme::usesLibermediaBrand() || LibermediaWidgetSettings::definition((string) $block->code) === []) {
+            return;
+        }
+        $this->authorizeLibermediaWidget();
+        $this->libermediaWidgetCode = (string) $block->code;
+        $this->libermediaWidgetType = (string) $block->type;
+        unset($this->isLibermediaWidget, $this->libermediaDefinition, $this->libermediaFields);
+        $settings = LibermediaWidgetSettings::forBlock($block, $translation);
+        $translationPayload = is_array($translation?->payload) ? $translation->payload : [];
+        $this->form['items_limit'] = (int) ($translationPayload['items_limit']
+            ?? LibermediaWidgetSettings::definition((string) $block->code)['items_limit'] ?? 8);
+        foreach (['title', 'subtitle', 'cta_label', 'cta_url'] as $key) {
+            $this->form[$key] = (string) ($settings[$key] ?? '');
+        }
+        $this->form['libermedia'] = array_intersect_key($settings, LibermediaWidgetSettings::fields((string) $block->code));
+        $this->libermediaImageUploads = [];
+        $this->form['template_body'] = '';
+    }
+
+    private function authorizeLibermediaWidget(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && ($user->isA('superadmin')
+            || ($user->can('admin.access') && $user->can('content.blocks.update'))), 403);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -674,6 +894,7 @@ class Form extends Component
             'reviews_featured_only' => false,
             'blog_source' => 'latest',
             'material_craftsmanship' => $this->materialCraftsmanshipFormValues(null),
+            'libermedia' => [],
             'template_body' => $this->defaultTemplateForType($defaultType),
 
             'slot_placement' => array_key_first($this->placements) ?: 'home.hero',
@@ -761,6 +982,12 @@ class Form extends Component
 
         $this->lastType = (string) $block->type;
 
+        if (StorefrontTheme::usesLibermediaBrand() && LibermediaWidgetSettings::definition((string) $block->code) !== []) {
+            $this->loadLibermediaWidget($block, $translation);
+
+            return;
+        }
+
         $existingTemplate = $this->readTemplateFile($block->code);
         $this->form['template_body'] = $existingTemplate !== ''
             ? $existingTemplate
@@ -784,6 +1011,12 @@ class Form extends Component
         }
 
         $translation = $block->translations->firstWhere('locale', $this->form['locale']);
+
+        if ($this->isLibermediaWidget) {
+            $this->loadLibermediaWidget($block, $translation);
+
+            return;
+        }
 
         if (! $translation) {
             $this->clearTranslationFields();

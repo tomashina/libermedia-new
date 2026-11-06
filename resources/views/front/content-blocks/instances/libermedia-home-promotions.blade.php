@@ -1,4 +1,5 @@
 @php
+    $lmWidget = \App\Support\LibermediaWidgetSettings::forBlock($block, $translation ?? null);
     // Keep this offer row current when an editor-selected promotion expires.
     $lmPromotionPrices = app(\App\Services\Pricing\ProductPricePresentationService::class);
     $products = $products->filter(fn ($product) => (bool) ($lmPromotionPrices->forProduct($product, auth()->user())['has_promotional_discount'] ?? false))->values();
@@ -20,17 +21,17 @@
         <div class="splide herrera-home-product-carousel" data-herrera-home-carousel data-continuous-card-carousel data-splide='@json($lmProductOptions)' aria-labelledby="{{ $lmProductHeadingId }}" style="--herrera-product-columns:6;--herrera-product-tablet-columns:4;--herrera-product-mobile-columns:2;">
             <div class="herrera-home-heading">
                 <div>
-                    <p class="herrera-home-section-eyebrow">ODABRANA AKCIJSKA PONUDA</p>
-                    <h2 id="{{ $lmProductHeadingId }}">{{ $translation?->title ?? $block->name }}</h2>
+                    <p class="herrera-home-section-eyebrow">{{ $lmWidget['eyebrow'] }}</p>
+                    <h2 id="{{ $lmProductHeadingId }}">{{ $lmWidget['title'] }}</h2>
                 </div>
                 <div class="herrera-home-product-actions">
-                    @if ($translation?->cta_label && $translation?->cta_url)
-                        <a class="herrera-home-products-link" href="{{ $translation->cta_url }}">{{ $translation->cta_label }} <x-fa-icon name="arrow-right" /></a>
+                    @if ($lmWidget['cta_label'] !== '' && $lmWidget['cta_url'] !== '')
+                        <a class="herrera-home-products-link" href="{{ $lmWidget['cta_url'] }}">{{ $lmWidget['cta_label'] }} <x-fa-icon :name="$lmWidget['cta_icon']" /></a>
                     @endif
                     @if ($lmProductCount > 2)
                         <div class="splide__arrows">
-                            <button class="splide__arrow splide__arrow--prev" type="button" aria-label="Prethodni proizvodi" disabled><x-fa-icon name="chevron-right" /></button>
-                            <button class="splide__arrow splide__arrow--next" type="button" aria-label="Sljedeći proizvodi" disabled><x-fa-icon name="chevron-right" /></button>
+                            <button class="splide__arrow splide__arrow--prev" type="button" aria-label="{{ $lmWidget['previous_label'] }}" disabled><x-fa-icon name="chevron-right" /></button>
+                            <button class="splide__arrow splide__arrow--next" type="button" aria-label="{{ $lmWidget['next_label'] }}" disabled><x-fa-icon name="chevron-right" /></button>
                         </div>
                     @endif
                 </div>

@@ -18,7 +18,7 @@ class BundleController extends Controller
         $bundles = Bundle::available()->whereHas('discounts', fn ($q) => $q->whereIn('customer_group_id', $groups)->where('value', '>', 0))
             ->with(['products.translations', 'products.media', 'products.taxRate', 'products.categories',
                 'products.optionValues.optionValue.option:id,is_active,payload',
-                'products.optionValues.parentOptionValue.option:id,is_active,payload', 'discounts'])->orderBy('sort_order')->paginate(12);
+                'products.optionValues.parentOptionValue.option:id,is_active,payload', 'discounts'])->orderBy('sort_order')->orderBy('id')->paginate(12);
 
         $offers = $bundles->getCollection()->mapWithKeys(fn ($bundle) => [$bundle->id => $presenter->present($bundle, $groups, auth()->user())]);
 

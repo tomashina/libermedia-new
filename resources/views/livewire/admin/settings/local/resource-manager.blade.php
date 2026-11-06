@@ -5,7 +5,7 @@
             <div>
                 <h1 class="text-xl font-semibold tracking-tight">{{ $this->title }}</h1>
                 <p class="mt-1 text-sm text-slate-600">
-                    {{ __('Settings namespace:') }} <code>Settings/Local/{{ str_replace('-', '', ucwords($resource, '-')) }}</code>
+                    {{ __('Pretražite i uredite postavke koje se koriste pri kupnji.') }}
                 </p>
                 <p class="mt-2 text-xs text-slate-500">{{ __('Items per page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
             </div>
@@ -42,6 +42,7 @@
             </h2>
 
             <form wire:submit="save" class="admin-form mt-4 space-y-4">
+                <x-admin.form-errors />
                 @if (in_array('code', $resources[$resource]['fields'], true))
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Code') }}</label>
@@ -224,11 +225,14 @@
                 @endif
 
                 @if (in_array('settings_text', $resources[$resource]['fields'], true))
-                    <div>
+                    <details class="rounded-xl border border-slate-200 bg-slate-50 p-4" @if ($errors->has('form.settings_text')) open @endif>
+                        <summary class="cursor-pointer text-sm font-semibold text-slate-700">{{ __('Napredne postavke') }}</summary>
+                        <div class="mt-3">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Settings JSON') }}</label>
                         <textarea rows="5" wire:model="form.settings_text" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs outline-none ring-cyan-200 focus:ring"></textarea>
                         @error('form.settings_text') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
-                    </div>
+                        </div>
+                    </details>
                 @endif
 
                 @if ($resource === 'payment-methods')

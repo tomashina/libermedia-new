@@ -20,7 +20,7 @@
 
     <section class="front-soft-hero lm-page-title mb-8 px-4 py-6 text-center sm:px-6">
         <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">{{ __('ui.account.order_show.title', ['number' => $order->display_order_number]) }}</h1>
-        <p class="mt-2 text-slate-600">{{ __('ui.account.order_show.status') }}: <span class="font-semibold">{{ $order->status?->name ?? __('ui.account.orders.status_new') }}</span></p>
+        <p class="mt-2 text-slate-600">{{ __('ui.account.order_show.status') }}: <span class="font-semibold">{{ $order->status?->display_name ?? __('ui.account.orders.status_new') }}</span></p>
         <p class="mt-1 text-sm text-slate-500">{{ __('ui.account.order_show.placed_at') }}: {{ optional($order->placed_at ?? $order->created_at)->format('Y-m-d H:i') }}</p>
     </section>
         @if ($canViewPrices && $b2bAccount?->contractIsActive())
@@ -49,6 +49,7 @@
             @php
                 $visitedStatusIds = collect([$order->status_id])
                     ->merge($order->history->pluck('to_status_id'))
+                    ->merge($order->history->pluck('from_status_id'))
                     ->filter()
                     ->map(static fn ($id) => (int) $id)
                     ->unique()
@@ -84,7 +85,7 @@
                                         @endif
                                     </span>
                                     <span class="mt-3 text-xs font-semibold uppercase tracking-wide leading-none {{ $isCurrent ? 'text-slate-900' : ($passed ? 'text-slate-700' : 'text-slate-500') }}">
-                                        {{ $step->name }}
+                                        {{ $step->display_name }}
                                     </span>
                                     @if ($passed && $stepDate)
                                         <span class="mt-1 text-[11px] font-medium text-slate-500">{{ $stepDate }}</span>
@@ -112,7 +113,7 @@
                             @endphp
                             <li class="border border-slate-200 bg-slate-50 px-3 py-2">
                                 <span class="font-semibold">{{ optional($entry->created_at)->format('Y-m-d H:i') }}</span>
-                                {{ __('ui.account.order_show.timeline.to') }} {{ $entry->toStatus?->name ?? __('ui.account.order_show.timeline.status_updated') }}
+                                {{ __('ui.account.order_show.timeline.to') }} {{ $entry->toStatus?->display_name ?? __('ui.account.order_show.timeline.status_updated') }}
                                 @if ($entryComment)
                                     <div class="mt-1 text-slate-600">{{ $entryComment }}</div>
                                 @endif

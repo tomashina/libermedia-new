@@ -2,7 +2,7 @@
     <div class="admin-panel admin-search-panel p-6">
         <h1 class="text-xl font-semibold tracking-tight">{{ __('Runtime Controls') }}</h1>
         <p class="mt-2 text-sm text-slate-600">
-            {{ __('Settings namespace:') }} <code>Settings/System/Runtime</code>
+            {{ __('Upravljajte dostupnošću trgovine i osvježite njezinu predmemoriju.') }}
         </p>
     </div>
 
@@ -35,13 +35,13 @@
                 </button>
             </div>
             <p class="mt-3 text-xs text-slate-500">
-                {{ __('Turning ON sets maintenance mode and redirects via bypass secret so your admin session stays accessible.') }}
+                {{ __('Za vrijeme održavanja trgovina nije dostupna kupcima, a vaš pristup administraciji ostaje otvoren.') }}
             </p>
         </div>
 
         <div class="admin-panel admin-panel-soft p-6">
             <p class="admin-section-title">{{ __('Cache') }}</p>
-            <p class="mt-3 text-sm text-slate-600">{{ __('Clear application, config, route, and view cache.') }}</p>
+            <p class="mt-3 text-sm text-slate-600">{{ __('Osvježite spremljene podatke kako bi se odmah prikazale najnovije promjene.') }}</p>
             <button type="button" wire:click="clearCache" class="mt-4 rounded-xl bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-800">
                 {{ __('Clean Cache') }}
             </button>

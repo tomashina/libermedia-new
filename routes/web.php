@@ -764,3 +764,5 @@ require __DIR__.'/auth.php';
 // A registered fallback makes that middleware run for formerly unregistered
 // paths as well; unknown paths still retain the normal 404 semantics.
 Route::fallback(fn () => abort(404))->middleware(['front.locale', 'front.device']);
+
+\App\Support\Libermedia\PublicUrls::registerAliases();

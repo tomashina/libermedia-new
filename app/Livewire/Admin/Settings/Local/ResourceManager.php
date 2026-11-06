@@ -12,9 +12,11 @@ use App\Models\Settings\Local\Region;
 use App\Models\Settings\Local\ShippingMethod;
 use App\Models\Settings\Local\TaxRate;
 use App\Services\Front\AddressDirectoryService;
+use App\Services\Payments\LibermediaBankDetails;
 use App\Services\Settings\LocalSettingsService;
 use App\Services\Settings\SystemSettingsService;
 use App\Support\AdminLocalSettingAccess;
+use App\Support\StorefrontTheme;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -313,6 +315,10 @@ class ResourceManager extends Component
         $record = $modelClass::query()->findOrFail($id);
         $this->editingId = $record->id;
         $settings = is_array($record->settings ?? null) ? $record->settings : [];
+        if ($this->resource === 'payment-methods' && $this->isBankTransferCode((string) $record->code)
+            && StorefrontTheme::usesLibermediaBrand()) {
+            $settings = LibermediaBankDetails::settings($settings, $record->description);
+        }
         $this->corvusCredentialsStored = $this->isCorvusCode((string) ($record->code ?? ''))
             && $this->hasRequiredCorvusSettings($settings);
 

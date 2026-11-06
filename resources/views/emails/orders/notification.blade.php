@@ -147,16 +147,21 @@
                     <tr><td>{{ __('mail.orders.total') }}</td><td class="num">{{ $totals['grand_total'] }}</td></tr>
                 </table>
 
-                @if (!empty($bank_transfer) && !empty($bank_transfer['receiver_iban']))
+                @if (!empty($bank_transfer) && (!empty($bank_transfer['receiver_iban']) || !empty($bank_transfer['instructions'])))
                     <div class="bank">
                         <h3>{{ __('mail.orders.bank_transfer_title') }}</h3>
+                        @if (!empty($bank_transfer['instructions']))
+                            <p style="white-space:pre-line">{{ $bank_transfer['instructions'] }}</p>
+                        @endif
+                        @if (!empty($bank_transfer['receiver_iban']))
                         <p>{{ __('mail.orders.bank_transfer_note') }}</p>
                         <p><strong>{{ __('mail.orders.bank_recipient') }}:</strong> {{ $bank_transfer['receiver_name'] ?? '-' }}</p>
                         <p><strong>{{ __('mail.orders.bank_iban') }}:</strong> {{ $bank_transfer['receiver_iban'] ?? '-' }}</p>
-                        <p><strong>{{ __('mail.orders.bank_model') }}:</strong> {{ $bank_transfer['model'] ?? '-' }}</p>
+                        <p><strong>{{ __('mail.orders.bank_model') }}:</strong> HR{{ preg_replace('/^HR/i', '', (string) ($bank_transfer['model'] ?? '00')) }}</p>
                         <p><strong>{{ __('mail.orders.bank_reference') }}:</strong> {{ $bank_transfer['reference'] ?? '-' }}</p>
                         <p><strong>{{ __('mail.orders.bank_amount') }}:</strong> {{ number_format((float) ($bank_transfer['amount'] ?? 0), 2, '.', ',') }} {{ $currency }}</p>
                         <p><strong>{{ __('mail.orders.bank_description') }}:</strong> {{ $bank_transfer['description'] ?? '-' }}</p>
+                        @endif
 
                         @if (!empty($bank_transfer['qr_image_base64']))
                             @php
@@ -168,11 +173,26 @@
                                 }
                             @endphp
                             <div class="bank-qr">
+                                @if (!empty($bank_transfer['local_codes']))<p><strong>HUB3 barkod za mobilno bankarstvo</strong></p>@endif
                                 @if (!empty($qrCid))
                                     <img src="{{ $qrCid }}" alt="{{ __('mail.orders.bank_qr_alt') }}">
                                 @elseif ($qrBinary !== false)
                                     <img src="data:{{ $qrMime }};base64,{{ $bank_transfer['qr_image_base64'] }}" alt="{{ __('mail.orders.bank_qr_alt') }}">
                                 @endif
+                            </div>
+                        @endif
+                        @if (!empty($bank_transfer['epc_qr_image_base64']))
+                            @php
+                                $epcBinary = base64_decode((string) $bank_transfer['epc_qr_image_base64'], true);
+                                $epcCid = $epcBinary !== false && isset($message) && method_exists($message, 'embedData')
+                                    ? $message->embedData($epcBinary, 'sepa-qr-'.$order_number.'.png', 'image/png') : null;
+                            @endphp
+                            <div class="bank-qr">
+                                <p><strong>SEPA QR kod</strong></p>
+                                @if ($epcBinary !== false)
+                                    <img src="{{ $epcCid ?: 'data:image/png;base64,'.$bank_transfer['epc_qr_image_base64'] }}" alt="SEPA QR kod za uplatu narudžbe" style="width:240px;max-width:100%;height:auto">
+                                @endif
+                                <p>Skenirajte kod u aplikaciji banke i provjerite podatke prije potvrde uplate. Ako banka ne podržava SEPA QR, koristite HUB3 barkod ili navedene podatke.</p>
                             </div>
                         @endif
                     </div>

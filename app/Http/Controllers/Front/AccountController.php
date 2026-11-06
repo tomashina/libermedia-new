@@ -13,6 +13,8 @@ use App\Services\Front\AddressDirectoryService;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Settings\SystemSettingsService;
 use App\Services\User\CustomerImpersonationService;
+use App\Support\OrderStatusDisplay;
+use App\Support\StorefrontTheme;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -146,11 +148,22 @@ class AccountController extends Controller
             ])
             ->firstOrFail();
 
+        $libermedia = StorefrontTheme::usesLibermediaBrand();
+        $visitedStatusIds = collect([$order->status_id])
+            ->merge($order->history->pluck('from_status_id'))->merge($order->history->pluck('to_status_id'))
+            ->filter()->map(static fn ($id) => (int) $id)->unique()->values();
         $statusSteps = OrderStatus::query()
-            ->where('is_active', true)
+            ->where(fn ($query) => $query->where('is_active', true)
+                ->when($libermedia, fn ($query) => $query->orWhereIn('id', $visitedStatusIds)))
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get(['id', 'name', 'sort_order']);
+            ->get(['id', 'code', 'name', 'sort_order', 'is_active', 'is_cancelled']);
+        if ($libermedia) {
+            $regularIds = $statusSteps->filter(fn (OrderStatus $status) => $status->is_active && OrderStatusDisplay::isRegularStep($status))
+                ->take(4)->modelKeys();
+            $visibleIds = $visitedStatusIds->merge($regularIds);
+            $statusSteps = $statusSteps->filter(fn (OrderStatus $status) => $visibleIds->contains((int) $status->id))->values();
+        }
 
         return view($this->frontendView($request, 'account.order-show'), [
             'order' => $order,

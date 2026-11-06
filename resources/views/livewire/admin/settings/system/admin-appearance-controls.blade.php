@@ -2,7 +2,7 @@
     <div class="admin-panel admin-search-panel p-6">
         <h1 class="text-xl font-semibold tracking-tight">{{ __('Admin Appearance Controls') }}</h1>
         <p class="mt-2 text-sm text-slate-600">
-            {{ __('Settings namespace:') }} <code>Settings/System/AdminAppearanceControls</code>
+            {{ __('Postavite koliko se stavki prikazuje na popisima u administraciji i trgovini.') }}
         </p>
     </div>
 
@@ -33,7 +33,7 @@
 
         <div class="admin-panel admin-panel-soft p-6">
             <p class="admin-section-title">{{ __('Frontend Pagination') }}</p>
-            <p class="mt-3 text-sm text-slate-600">{{ __('Prepared now so front Vue templates can consume same values from one source.') }}</p>
+            <p class="mt-3 text-sm text-slate-600">{{ __('Broj proizvoda na stranici može se razlikovati na računalu i mobitelu.') }}</p>
 
             <form wire:submit="save" class="admin-form mt-4 space-y-4">
                 <div class="grid grid-cols-2 gap-3">

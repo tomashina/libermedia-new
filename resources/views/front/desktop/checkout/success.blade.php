@@ -28,7 +28,7 @@
         <dl class="mt-6 grid gap-3 text-sm md:grid-cols-2">
             <div class="border border-slate-200 bg-slate-100 p-4">
                 <dt class="text-slate-500">{{ __('ui.checkout.success.status') }}</dt>
-                <dd class="mt-1 font-semibold text-slate-900">{{ $order->status?->name ?? __('ui.checkout.success.status_fallback_new') }}</dd>
+                <dd class="mt-1 font-semibold text-slate-900">{{ $order->status?->display_name ?? __('ui.checkout.success.status_fallback_new') }}</dd>
             </div>
             <div class="border border-slate-200 bg-slate-100 p-4">
                 <dt class="text-slate-500">{{ __('ui.checkout.success.grand_total') }}</dt>
@@ -50,7 +50,7 @@
                     <div class="mt-3 grid gap-2 text-sm text-slate-800 md:grid-cols-2">
                         <p><strong>{{ __('ui.checkout.success.bank_recipient') }}:</strong> {{ $bankTransfer['receiver_name'] ?? '-' }}</p>
                         <p><strong>{{ __('ui.checkout.success.bank_iban') }}:</strong> {{ $bankTransfer['receiver_iban'] ?? '-' }}</p>
-                        <p><strong>{{ __('ui.checkout.success.bank_model') }}:</strong> {{ $bankTransfer['model'] ?? '-' }}</p>
+                        <p><strong>{{ __('ui.checkout.success.bank_model') }}:</strong> HR{{ preg_replace('/^HR/i', '', (string) ($bankTransfer['model'] ?? '00')) }}</p>
                         <p><strong>{{ __('ui.checkout.success.bank_reference') }}:</strong> {{ $bankTransfer['reference'] ?? '-' }}</p>
                         <p><strong>{{ __('ui.checkout.success.bank_amount') }}:</strong> {{ $order->currency_code }} {{ number_format((float) ($bankTransfer['amount'] ?? 0), 2) }}</p>
                         <p><strong>{{ __('ui.checkout.success.bank_description') }}:</strong> {{ $bankTransfer['description'] ?? '-' }}</p>
@@ -59,11 +59,21 @@
 
                 @if (!empty($bankTransfer['qr_image_base64']))
                     <div class="mt-4">
+                        @if (!empty($bankTransfer['local_codes']))
+                            <p class="mb-2 text-sm font-semibold text-slate-800">HUB3 barkod za mobilno bankarstvo</p>
+                        @endif
                         <img
                             src="data:{{ $bankTransfer['qr_image_mime'] ?? 'image/png' }};base64,{{ $bankTransfer['qr_image_base64'] }}"
                             alt="{{ __('ui.checkout.success.bank_qr_alt') }}"
                             class="h-auto w-full max-w-[380px] border border-slate-200 bg-white p-2"
                         >
+                    </div>
+                @endif
+                @if (!empty($bankTransfer['epc_qr_image_base64']))
+                    <div class="mt-5">
+                        <p class="mb-2 text-sm font-semibold text-slate-800">SEPA QR kod</p>
+                        <img src="data:image/png;base64,{{ $bankTransfer['epc_qr_image_base64'] }}" alt="SEPA QR kod za uplatu narudžbe" class="h-auto w-full max-w-[240px] border border-slate-200 bg-white p-2">
+                        <p class="mt-2 text-sm text-slate-600">Skenirajte kod u aplikaciji banke i provjerite podatke prije potvrde uplate. Ako banka ne podržava SEPA QR, koristite HUB3 barkod ili navedene podatke.</p>
                     </div>
                 @endif
             </section>

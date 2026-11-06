@@ -178,6 +178,8 @@ class Manager extends Component
             'rows' => $rows,
             'statuses' => $statuses,
             'perPage' => $perPage,
+            'canDeleteOrders' => auth()->user()->isA('superadmin')
+                || (auth()->user()->can('admin.access') && auth()->user()->can('sales.orders.update')),
         ]);
     }
 

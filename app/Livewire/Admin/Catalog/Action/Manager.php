@@ -13,9 +13,13 @@ class Manager extends Component
     use WithPagination;
 
     public string $search = '';
+
     public string $locale = 'en';
+
     public string $scopeFilter = 'all';
+
     public string $typeFilter = 'all';
+
     public string $stateFilter = 'active';
 
     public function mount(): void
@@ -45,6 +49,15 @@ class Manager extends Component
 
     public function updatedStateFilter(): void
     {
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->search = '';
+        $this->scopeFilter = 'all';
+        $this->typeFilter = 'all';
+        $this->stateFilter = 'all';
         $this->resetPage();
     }
 

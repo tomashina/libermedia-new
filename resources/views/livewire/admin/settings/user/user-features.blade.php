@@ -1,8 +1,7 @@
 <div class="space-y-6">
     <div class="admin-panel admin-search-panel p-6">
         <h1 class="text-xl font-semibold tracking-tight">{{ __('User Settings') }}</h1>
-        <p class="mt-2 text-sm text-slate-600">{{ __('Namespace:') }} <code>Settings/User</code></p>
-        <p class="mt-2 text-xs text-slate-500">{{ __('Control user tracking capture and loyalty engine behavior.') }}</p>
+        <p class="mt-2 text-sm text-slate-600">{{ __('Uredite praćenje aktivnosti kupaca i pravila programa vjernosti.') }}</p>
     </div>
 
     <div class="admin-panel admin-form-panel p-6">
@@ -121,8 +120,7 @@
                         @error('form.loyalty_customer_group_ids.*') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                        {{ __('Earning:') }} <code>round(order grand total * points per currency unit)</code>.
-                        {{ __('Redemption discount:') }} <code>redeemed points * value per point</code>.
+                        {{ __('Bodovi se računaju iz ukupnog iznosa narudžbe, a pri korištenju se množe s vrijednošću jednog boda.') }}
                         {{ __('Only paid, non-cancelled orders meeting the minimum total earn points. The reversal policy applies if an eligible order is later cancelled or refunded.') }}
                     </div>
                 </div>

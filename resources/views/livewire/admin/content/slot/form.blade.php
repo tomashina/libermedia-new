@@ -12,6 +12,7 @@
 
     <div class="admin-panel admin-form-panel p-6">
         <form wire:submit="save" class="admin-form space-y-4">
+            <x-admin.form-errors />
             @php
                 $selectedBlock = $blockOptions->firstWhere('id', (int) ($form['content_block_id'] ?? 0));
             @endphp

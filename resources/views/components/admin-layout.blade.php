@@ -1201,9 +1201,10 @@
                     $catalogAttributesActive = request()->routeIs('admin.attributes*');
                     $catalogOptionsActive = request()->routeIs('admin.options*');
                     $catalogManufacturersActive = request()->routeIs('admin.manufacturers*');
-                    $catalogActionsActive = request()->routeIs('admin.actions*', 'admin.bundles');
+                    $catalogActionsActive = request()->routeIs('admin.actions*');
+                    $catalogBundlesActive = request()->routeIs('admin.bundles');
                     $catalogB2bPricesActive = request()->routeIs('admin.b2b-prices*');
-                    $catalogOpen = $catalogCategoriesActive || $catalogProductsActive || $catalogStockNotificationsActive || $catalogAttributesActive || $catalogOptionsActive || $catalogManufacturersActive || $catalogActionsActive || $catalogB2bPricesActive;
+                    $catalogOpen = $catalogCategoriesActive || $catalogProductsActive || $catalogStockNotificationsActive || $catalogAttributesActive || $catalogOptionsActive || $catalogManufacturersActive || $catalogActionsActive || $catalogBundlesActive || $catalogB2bPricesActive;
                     $salesOrdersActive = request()->routeIs('admin.orders*');
                     $salesGiftVouchersActive = request()->routeIs('admin.gift-vouchers');
                     $salesOffersActive = request()->routeIs('admin.customer-offers.*');

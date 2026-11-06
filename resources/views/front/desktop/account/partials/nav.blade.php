@@ -40,6 +40,9 @@
     else $accountUser?->setRelation('b2bAccount', null);
     $b2bAccess = app(\App\Services\Pricing\B2BAccessService::class);
     $libermediaStorefront = \App\Support\StorefrontTheme::usesLibermediaBrand();
+    if ($libermediaStorefront) {
+        $items = array_values(array_filter($items, static fn ($item) => $item['key'] !== 'customer_offers'));
+    }
     $b2bNavigationAvailable = ! $libermediaStorefront
         && ($b2bAccess->b2cEnabled() ? $b2bAccess->approvedAccount($accountUser) !== null : $b2bAccess->canViewPrices($accountUser))
         && $accountUser?->b2bAccount?->contractIsActive();

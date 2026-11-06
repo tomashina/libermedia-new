@@ -14,26 +14,27 @@
     </div>
 
     <form wire:submit="save" class="space-y-6">
+        <x-admin.form-errors />
         <div class="admin-panel admin-form-panel p-6">
             <p class="admin-section-title">{{ __('Core Data') }}</p>
 
-            <div class="mt-4 grid gap-3" style="grid-template-columns: repeat(12, minmax(0, 1fr));">
-                <div style="grid-column: span 3;">
+            <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-12">
+                <div class="sm:col-span-3">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Code') }}</label>
                     <input type="text" wire:model="form.code" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-mono" />
                     @error('form.code') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
-                <div style="grid-column: span 3;">
+                <div class="sm:col-span-3">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Group Code') }}</label>
                     <input type="text" wire:model="form.group_code" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-mono lowercase" />
                     @error('form.group_code') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
-                <div style="grid-column: span 2;">
+                <div class="sm:col-span-2">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Sort Order') }}</label>
                     <input type="number" min="0" wire:model="form.sort_order" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                     @error('form.sort_order') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
-                <div style="grid-column: span 2;">
+                <div class="sm:col-span-2">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('admin.common.locale') }}</label>
                     <select wire:model.live="form.locale" data-tom-select data-tom-no-search="1" class="admin-select w-full rounded-xl border border-slate-300 px-3 py-2 text-sm lowercase">
                           @foreach ($adminLocaleOptions as $localeOption)

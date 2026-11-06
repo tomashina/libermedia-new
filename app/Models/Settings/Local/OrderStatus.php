@@ -2,6 +2,7 @@
 
 namespace App\Models\Settings\Local;
 
+use App\Support\OrderStatusDisplay;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -32,5 +33,10 @@ class OrderStatus extends Model
             'sort_order' => 'integer',
             'settings' => 'array',
         ];
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        return OrderStatusDisplay::label((string) ($this->attributes['name'] ?? ''), (string) ($this->attributes['code'] ?? ''));
     }
 }

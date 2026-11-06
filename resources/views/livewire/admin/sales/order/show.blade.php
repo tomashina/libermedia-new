@@ -44,7 +44,7 @@
                 <p class="mt-2 text-sm text-slate-600">{{ __('Review snapshot data, adjust status, and keep timeline notes.') }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $statusClass }}">{{ $order->status?->name ?? __('Unknown') }}</span>
+                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $statusClass }}">{{ $order->status?->display_name ?? __('Unknown') }}</span>
                 <span class="admin-chip">{{ \App\Support\Currency::format((float) $order->grand_total, $order->currency_code) }}</span>
                 <a
                     href="{{ route('admin.orders.invoice', ['order' => $order->id]) }}"
@@ -239,7 +239,7 @@
                                     wire:click="quickStatusByCode('{{ $quickStatus->code }}')"
                                     class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-100"
                                 >
-                                    {{ __('Mark') }} {{ $quickStatus->name }}
+                                    {{ __('Mark') }} {{ $quickStatus->display_name }}
                                 </button>
                             @endforeach
                         </div>
@@ -250,7 +250,7 @@
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Target Status') }}</label>
                     <select wire:model="form.status_id" data-tom-select data-tom-no-search="1" class="admin-select w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                         @foreach ($statuses as $statusItem)
-                            <option value="{{ $statusItem->id }}">{{ $statusItem->name }}</option>
+                            <option value="{{ $statusItem->id }}">{{ $statusItem->display_name }}</option>
                         @endforeach
                     </select>
                     @error('form.status_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
@@ -451,9 +451,9 @@
                             <span>{{ $entry->changedBy?->name ?: __('System') }}</span>
                         </div>
                         <p class="mt-1 text-sm text-slate-700">
-                            {{ $entry->fromStatus?->name ?: '-' }}
+                            {{ $entry->fromStatus?->display_name ?: '-' }}
                             <span class="px-1">-&gt;</span>
-                            {{ $entry->toStatus?->name ?: '-' }}
+                            {{ $entry->toStatus?->display_name ?: '-' }}
                         </p>
                         @if ($entry->comment)
                             <p class="mt-1 text-xs text-slate-600">{{ $entry->comment }}</p>

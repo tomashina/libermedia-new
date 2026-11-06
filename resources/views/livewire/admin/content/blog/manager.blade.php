@@ -1,14 +1,14 @@
 <div class="space-y-6">
     <div class="admin-panel admin-search-panel p-6">
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
                 <h1 class="text-xl font-semibold tracking-tight">{{ __('Blog Posts') }}</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ __('Manage blog content with locale-specific slugs and SEO fields.') }}</p>
                 <p class="mt-2 text-xs text-slate-500">{{ __('Items per page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
             </div>
 
-            <div class="flex w-[64rem] max-w-full items-end justify-end gap-3">
-                <div class="grid w-full max-w-[56rem] items-end gap-3" style="grid-template-columns: minmax(26rem, 1fr) 8rem;">
+            <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-end xl:max-w-3xl">
+                <div class="grid min-w-0 flex-1 items-end gap-3 sm:grid-cols-2">
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Search') }}</label>
                         <input
@@ -27,7 +27,7 @@
                         </select>
                     </div>
                 </div>
-                <a href="{{ route('admin.content.blog.create', ['locale' => $locale]) }}" class="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-800">
+                <a href="{{ route('admin.content.blog.create', ['locale' => $locale]) }}" class="shrink-0 rounded-xl bg-cyan-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-cyan-800">
                     {{ __('Create') }}
                 </a>
             </div>
@@ -52,11 +52,21 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($rows as $row)
-                        @php $tr = $row->translations->first(); @endphp
+                        @php
+                            $tr = $row->translations->first();
+                            $cover = \App\Support\Media\HerreraBlogImage::first($row, ['thumb_100x100', 'card_320w']);
+                        @endphp
                         <tr>
                             <td class="px-3 py-2 text-slate-800">
-                                <div class="font-medium">{{ $tr?->title ?? __('(missing title)') }}</div>
-                                <div class="text-xs text-slate-500">{{ $row->code }}</div>
+                                <div class="flex items-center gap-3">
+                                    @if ($cover)
+                                        <img src="{{ $cover }}" alt="" class="h-12 w-12 shrink-0 rounded-lg border border-slate-200 object-cover" loading="lazy" decoding="async">
+                                    @endif
+                                    <div class="min-w-0">
+                                        <a href="{{ route('admin.content.blog.edit', ['post' => $row->id, 'locale' => $locale]) }}" class="font-medium text-slate-900 hover:text-cyan-700">{{ $tr?->title ?? __('(missing title)') }}</a>
+                                        <div class="text-xs text-slate-500">{{ $row->code }}</div>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ $tr?->slug ?? '-' }}</td>
                             <td class="px-3 py-2 text-center text-slate-700">{{ $row->published_at?->format('Y-m-d H:i') ?? '-' }}</td>
@@ -89,7 +99,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-3 py-8 text-center text-sm text-slate-500">{{ __('No blog posts yet.') }}</td>
+                            <td colspan="7" class="px-3 py-8 text-center text-sm text-slate-500">{{ $search !== '' ? __('Nema rezultata za odabranu pretragu.') : __('No blog posts yet.') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

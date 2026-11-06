@@ -142,8 +142,13 @@
                     @empty
                         <tr>
                             <td colspan="7" class="px-3 py-12 text-center">
-                                <p class="font-medium text-slate-700">{{ __('No actions or discounts yet.') }}</p>
-                                <a href="{{ route('admin.actions.create', ['locale' => $locale]) }}" class="mt-2 inline-flex text-sm font-semibold text-cyan-700 hover:text-cyan-900">{{ __('Kreiraj prvu akciju') }} →</a>
+                                @if ($search !== '' || $scopeFilter !== 'all' || $typeFilter !== 'all' || $stateFilter !== 'all')
+                                    <p class="font-medium text-slate-700">{{ __('Nema akcija za odabrane filtre.') }}</p>
+                                    <button type="button" wire:click="clearFilters" class="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700">{{ __('Očisti filtre') }}</button>
+                                @else
+                                    <p class="font-medium text-slate-700">{{ __('No actions or discounts yet.') }}</p>
+                                    <a href="{{ route('admin.actions.create', ['locale' => $locale]) }}" class="mt-2 inline-flex text-sm font-semibold text-cyan-700 hover:text-cyan-900">{{ __('Kreiraj prvu akciju') }} →</a>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

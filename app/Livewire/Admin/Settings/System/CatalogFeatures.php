@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Settings\System;
 
 use App\Services\Catalog\CatalogFeatureService;
 use App\Services\Settings\SystemSettingsService;
+use App\Support\StorefrontTheme;
 use Livewire\Component;
 use Silber\Bouncer\BouncerFacade as Bouncer;
 
@@ -33,11 +34,11 @@ class CatalogFeatures extends Component
     {
         $this->authorizeAccess();
 
-        if (!in_array($flag, $this->flagKeys(), true)) {
+        if (! in_array($flag, $this->flagKeys(), true)) {
             return;
         }
 
-        $this->form[$flag] = !((bool) ($this->form[$flag] ?? false));
+        $this->form[$flag] = ! ((bool) ($this->form[$flag] ?? false));
     }
 
     public function save(): void
@@ -63,7 +64,7 @@ class CatalogFeatures extends Component
         /** @var array<string, bool> $defaults */
         $defaults = config('catalog_features.flags', []);
 
-        foreach ($this->form as $key => $value) {
+        foreach ($this->flagKeys() as $key) {
             $this->form[$key] = (bool) ($defaults[$key] ?? false);
         }
 
@@ -89,12 +90,14 @@ class CatalogFeatures extends Component
      */
     private function flagKeys(): array
     {
-        return array_keys(config('catalog_features.flags', []));
+        $keys = array_keys(config('catalog_features.flags', []));
+
+        return StorefrontTheme::usesLibermediaBrand() ? array_values(array_diff($keys, ['catalog_use_api'])) : $keys;
     }
 
     public function render()
     {
-        return view('livewire.admin.settings.system.catalog-features');
+        return view('livewire.admin.settings.system.catalog-features', ['isLibermedia' => StorefrontTheme::usesLibermediaBrand()]);
     }
 
     private function authorizeAccess(): void

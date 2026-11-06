@@ -10,15 +10,15 @@
 <div class="space-y-6">
     @unless ($editPage)
     <div class="admin-panel admin-search-panel p-6">
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
             <div>
                 <h1 class="text-xl font-semibold tracking-tight">{{ __('Comments Moderation') }}</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ __('Review and moderate user comments across product, blog, page, and FAQ content.') }}</p>
                 <p class="mt-2 text-xs text-slate-500">{{ __('Items per page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
             </div>
 
-            <div class="flex w-[74rem] max-w-full items-end justify-end gap-3">
-                <div class="grid w-full max-w-[66rem] items-end gap-3" style="grid-template-columns: minmax(20rem, 1.4fr) 9rem 10rem 8rem;">
+            <div class="w-full 2xl:max-w-5xl">
+                <div class="grid min-w-0 items-end gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Search') }}</label>
                         <input type="text" wire:model.live.debounce.300ms="search" placeholder="{{ __('Body, author, email...') }}" class="admin-search-input w-full rounded-xl border px-3 py-2 text-sm" />
@@ -59,18 +59,19 @@
             <h2 class="admin-section-title">{{ __('Edit Comment') }}</h2>
 
             <form wire:submit="saveEdit" class="admin-form mt-4 space-y-4">
-                <div class="grid gap-3" style="grid-template-columns: repeat(12, minmax(0, 1fr));">
-                    <div style="grid-column: span 3;">
+                <x-admin.form-errors />
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                    <div class="sm:col-span-3">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Author') }}</label>
                         <input type="text" wire:model="editForm.author_name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                         @error('editForm.author_name') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
-                    <div style="grid-column: span 3;">
+                    <div class="sm:col-span-3">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Email') }}</label>
                         <input type="email" wire:model="editForm.author_email" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                         @error('editForm.author_email') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
-                    <div style="grid-column: span 2;">
+                    <div class="sm:col-span-2">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Locale') }}</label>
                         <select wire:model="editForm.locale" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm lowercase">
                             <option value="">{{ __('Default') }}</option>
@@ -80,7 +81,7 @@
                         </select>
                         @error('editForm.locale') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
-                    <div style="grid-column: span 2;">
+                    <div class="sm:col-span-2">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Rating') }}</label>
                         <select wire:model="editForm.rating" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             <option value="">{{ __('No rating') }}</option>
@@ -90,7 +91,7 @@
                         </select>
                         @error('editForm.rating') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
-                    <div style="grid-column: span 2;">
+                    <div class="sm:col-span-2">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Status') }}</label>
                         <select wire:model="editForm.status" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             @foreach ($editableStatusOptions as $key => $label)
@@ -99,7 +100,7 @@
                         </select>
                         @error('editForm.status') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
-                    <div style="grid-column: span 12;">
+                    <div class="sm:col-span-12">
                         <button
                             type="button"
                             wire:click="$toggle('editForm.is_featured')"
@@ -117,7 +118,7 @@
                         @endif
                         @error('editForm.is_featured') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
-                    <div style="grid-column: span 12;">
+                    <div class="sm:col-span-12">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Comment') }}</label>
                         <textarea wire:model="editForm.body" rows="5" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"></textarea>
                         @error('editForm.body') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror

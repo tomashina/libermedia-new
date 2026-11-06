@@ -10,7 +10,7 @@
                 'email' => 'Email',
                 'branding' => 'Branding & Footer',
                 'newsletter' => 'Newsletter',
-                'integrations' => 'Integrations',
+                'integrations' => $this->isLibermedia ? 'Zaštita i analitika' : 'Integrations',
                 'pricing' => 'Pricing',
                 'cart' => 'admin.settings.store.cart.tab',
                 'images' => 'Images',
@@ -309,7 +309,7 @@
 
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Provider') }}</label>
-                        <select wire:model="form.store_newsletter_provider" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm md:w-72">
+                        <select wire:model.live="form.store_newsletter_provider" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm md:w-72">
                             <option value="none">{{ __('None') }}</option>
                             <option value="database">{{ __('Database') }}</option>
                             <option value="mailchimp">{{ __('Mailchimp') }}</option>
@@ -317,9 +317,10 @@
                         </select>
                         <p class="mt-2 text-xs text-slate-500">{{ __('Database stores signups locally and shows them in Users / Newsletter Signups.') }}</p>
                     </div>
+                    @if (($form['store_newsletter_provider'] ?? '') === 'mailchimp')
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Mailchimp API Key') }}</label>
-                        <input type="text" wire:model="form.store_newsletter_mailchimp_api_key" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                        <input type="password" wire:model="form.store_newsletter_mailchimp_api_key" autocomplete="off" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                         @error('form.store_newsletter_mailchimp_api_key') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
@@ -327,9 +328,11 @@
                         <input type="text" wire:model="form.store_newsletter_mailchimp_list_id" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                         @error('form.store_newsletter_mailchimp_list_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
+                    @endif
+                    @if (($form['store_newsletter_provider'] ?? '') === 'klaviyo')
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Klaviyo API Key') }}</label>
-                        <input type="text" wire:model="form.store_newsletter_klaviyo_api_key" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                        <input type="password" wire:model="form.store_newsletter_klaviyo_api_key" autocomplete="off" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                         @error('form.store_newsletter_klaviyo_api_key') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
@@ -337,6 +340,7 @@
                         <input type="text" wire:model="form.store_newsletter_klaviyo_list_id" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                         @error('form.store_newsletter_klaviyo_list_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
+                    @endif
                 </div>
             @endif
 
@@ -398,12 +402,14 @@
                         <input type="checkbox" wire:model="form.store_pricing_prices_include_tax" class="rounded border-slate-300 text-cyan-700 focus:ring-cyan-500" />
                         {{ __('Product prices include VAT') }}
                     </label>
+                    @unless ($this->isLibermedia)
                     <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 md:col-span-2">
                         <input type="checkbox" wire:model="form.store_pricing_b2c_enabled" class="rounded border-slate-300 text-cyan-700 focus:ring-cyan-500" />
                         {{ __('Omogući prodaju privatnim kupcima (B2C)') }}
                     </label>
                     <p class="text-xs text-slate-600 md:col-span-2">{{ __('Omogućuje javne maloprodajne cijene s PDV-om, registraciju privatnih kupaca i kupnju. Odobreni B2B kupci zadržavaju svoje ugovorene cijene.') }}</p>
                     @error('form.store_pricing_b2c_enabled') <p class="text-xs text-rose-600">{{ $message }}</p> @enderror
+                    @endunless
                 </div>
             @endif
 

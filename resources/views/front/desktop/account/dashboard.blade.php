@@ -124,7 +124,7 @@
                                 <tr class="border-t border-slate-200">
                                     <td class="px-4 py-3"><a href="{{ route('account.orders.show', ['orderNumber' => $order->order_number]) }}" class="store-text-link break-all font-semibold underline-offset-2 hover:underline">{{ $order->display_order_number }}</a></td>
                                     <td class="px-4 py-3">{{ optional($order->placed_at ?? $order->created_at)->format('Y-m-d H:i') }}</td>
-                                    <td class="px-4 py-3">{{ $order->status?->name ?? __('ui.account.orders.status_new') }}</td>
+                                    <td class="px-4 py-3">{{ $order->status?->display_name ?? __('ui.account.orders.status_new') }}</td>
                                     <td class="px-4 py-3 font-semibold">{{ \App\Support\Currency::format((float) $order->grand_total, $order->currency_code) }}</td>
                                 </tr>
                             @empty

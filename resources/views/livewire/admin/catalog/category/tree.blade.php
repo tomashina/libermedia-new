@@ -1,12 +1,12 @@
 <div class="space-y-6">
     <div class="admin-panel admin-search-panel p-6">
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
                 <h1 class="text-xl font-semibold tracking-tight">{{ __('Categories') }}</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ __('Lazy tree view with root pagination and scoped editing.') }}</p>
             </div>
 
-            <div class="grid w-[64rem] max-w-full items-end gap-3" style="grid-template-columns: minmax(34rem, 1fr) 9rem 7rem;">
+            <div class="grid w-full items-end gap-3 sm:grid-cols-[minmax(0,1fr)_9rem_7rem] xl:max-w-4xl">
                 <div>
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('admin.common.search') }}</label>
                     <input type="text" wire:model.live.debounce.300ms="search" placeholder="{{ __('Code, name or slug...') }}" class="admin-search-input w-full rounded-xl border px-3 py-2 text-sm" />

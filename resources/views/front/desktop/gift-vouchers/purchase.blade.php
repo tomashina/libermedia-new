@@ -22,16 +22,23 @@
             <div><dt>Vrijednost bona</dt><dd>{{ \App\Support\Currency::format((float) $voucher->initial_amount) }}</dd></div>
             <div><dt>Ukupno za uplatu</dt><dd>{{ \App\Support\Currency::format((float) $order->grand_total) }}</dd></div>
             <div><dt>Primatelj</dt><dd>{{ $voucher->recipient_name }}<small>{{ $voucher->recipient_email }}</small></dd></div>
-            <div><dt>Status</dt><dd>{{ $order->status?->name ?: ($order->paid_at ? 'Plaćeno' : 'Čeka uplatu') }}</dd></div>
+            <div><dt>Status</dt><dd>{{ $order->status?->display_name ?: ($order->paid_at ? 'Plaćeno' : 'Čeka uplatu') }}</dd></div>
         </dl>
         @if(!$order->paid_at && !$order->status?->is_cancelled && !empty($bankTransfer))
             <section class="gift-voucher-bank-instructions">
                 <h2>Podaci za uplatu</h2>
                 @if(!empty($bankTransfer['instructions']))<p class="gift-voucher-bank-note">{{ $bankTransfer['instructions'] }}</p>@endif
                 @if(!empty($bankTransfer['receiver_iban']))
-                    <dl><div><dt>Primatelj uplate</dt><dd>{{ $bankTransfer['receiver_name'] }}</dd></div><div><dt>IBAN</dt><dd>{{ $bankTransfer['receiver_iban'] }}</dd></div><div><dt>Model i poziv na broj</dt><dd>HR{{ $bankTransfer['model'] }} {{ $bankTransfer['reference'] }}</dd></div><div><dt>Iznos</dt><dd>{{ \App\Support\Currency::format((float) $bankTransfer['amount']) }}</dd></div></dl>
+                    <dl><div><dt>Primatelj uplate</dt><dd>{{ $bankTransfer['receiver_name'] }}</dd></div><div><dt>IBAN</dt><dd>{{ $bankTransfer['receiver_iban'] }}</dd></div><div><dt>Model i poziv na broj</dt><dd>HR{{ preg_replace('/^HR/i', '', (string) ($bankTransfer['model'] ?? '00')) }} {{ $bankTransfer['reference'] }}</dd></div><div><dt>Iznos</dt><dd>{{ \App\Support\Currency::format((float) $bankTransfer['amount']) }}</dd></div></dl>
                 @endif
-                @if(!empty($bankTransfer['qr_image_base64']))<img src="data:{{ $bankTransfer['qr_image_mime'] ?: 'image/png' }};base64,{{ $bankTransfer['qr_image_base64'] }}" alt="Skenirajte podatke za uplatu" width="280" height="280">@endif
+                @if(!empty($bankTransfer['qr_image_base64']))
+                    <p>HUB3 barkod za mobilno bankarstvo</p>
+                    <img src="data:{{ $bankTransfer['qr_image_mime'] ?: 'image/png' }};base64,{{ $bankTransfer['qr_image_base64'] }}" alt="Skenirajte podatke za uplatu" width="380" style="max-width:100%;height:auto">
+                @endif
+                @if(!empty($bankTransfer['epc_qr_image_base64']))
+                    <p>SEPA QR kod</p>
+                    <img src="data:image/png;base64,{{ $bankTransfer['epc_qr_image_base64'] }}" alt="SEPA QR kod za uplatu" width="240" style="max-width:100%;height:auto">
+                @endif
             </section>
         @endif
         <div class="gift-voucher-receipt-actions">

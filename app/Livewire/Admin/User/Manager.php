@@ -242,6 +242,7 @@ class Manager extends Component
             'segments' => $segments,
             'perPage' => $perPage,
             'loyaltyEnabled' => $loyaltyEnabled,
+            'canEditUsers' => auth()->user()->isA('superadmin') || auth()->user()->can('users.profile.update'),
             'representatives' => app(CustomerManagementService::class)->representatives()->when(app(OrderManagerAccess::class)->isRestricted(), fn ($query) => $query->whereKey(auth()->id()))->orderBy('name')->get(['id', 'name']),
             'businessSegments' => CustomerGroup::query()->businessSegments()->where('is_active', true)->orderBy('name')->get(),
             'customerTypes' => \App\Models\User\UserProfile::query()->whereIn('user_id', app(OrderManagerAccess::class)->scopeCustomers(User::query())->select('users.id'))->whereNotNull('customer_type')->where('customer_type', '!=', '')->distinct()->orderBy('customer_type')->pluck('customer_type'),

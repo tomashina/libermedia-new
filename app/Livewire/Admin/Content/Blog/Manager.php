@@ -12,6 +12,7 @@ class Manager extends Component
     use WithPagination;
 
     public string $search = '';
+
     public string $locale = 'en';
 
     public function mount(): void
@@ -32,7 +33,7 @@ class Manager extends Component
     public function delete(int $postId): void
     {
         $post = BlogPost::query()->find($postId);
-        if (!$post) {
+        if (! $post) {
             return;
         }
 
@@ -55,6 +56,7 @@ class Manager extends Component
             ->withCount('categories')
             ->with([
                 'translations' => fn ($q) => $q->where('locale', $this->locale),
+                'media' => fn ($q) => $q->whereIn('collection_name', ['blog_cover', 'blog_gallery'])->orderBy('order_column')->orderBy('id'),
             ])
             ->when($this->search !== '', function ($query): void {
                 $query->where(function ($q): void {

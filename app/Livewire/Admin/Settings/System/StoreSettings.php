@@ -11,6 +11,7 @@ use App\Models\Settings\Local\Language;
 use App\Services\Catalog\CatalogFeatureService;
 use App\Services\Settings\SystemSettingsService;
 use App\Support\Media\MediaProfileRegistry;
+use App\Support\StorefrontTheme;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -338,6 +339,11 @@ class StoreSettings extends Component
         $this->resetUploadsForCurrentTab();
 
         $this->dispatch('notify', type: 'success', message: __('Store settings saved.'));
+    }
+
+    public function getIsLibermediaProperty(): bool
+    {
+        return StorefrontTheme::usesLibermediaBrand();
     }
 
     public function updatedLocale(): void
@@ -1281,7 +1287,7 @@ class StoreSettings extends Component
     {
         return array_values(array_filter(
             array_keys($this->form),
-            fn (string $key): bool => match ($this->tab) {
+            fn (string $key): bool => ! ($this->isLibermedia && $key === 'store_pricing_b2c_enabled') && match ($this->tab) {
                 'email' => str_starts_with($key, 'store_email_'),
                 'branding' => str_starts_with($key, 'store_brand_')
                     || str_starts_with($key, 'store_footer_')

@@ -156,6 +156,7 @@
         </div>
 
         <form wire:submit="save" class="mt-5 space-y-6">
+            <x-admin.form-errors />
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div>
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Šifra') }}</label>

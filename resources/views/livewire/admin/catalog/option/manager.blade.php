@@ -1,14 +1,14 @@
 <div class="space-y-6">
     <div class="admin-panel admin-search-panel p-6">
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
                 <h1 class="text-xl font-semibold tracking-tight">{{ __('Options') }}</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ __('Manage reusable product options and attach them to products only when feature is enabled.') }}</p>
                 <p class="mt-2 text-xs text-slate-500">{{ __('Items per page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
             </div>
 
-            <div class="flex w-[64rem] max-w-full items-end justify-end gap-3">
-                <div class="grid w-full max-w-[56rem] items-end gap-3" style="grid-template-columns: minmax(26rem, 1fr) 8rem;">
+            <div class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:max-w-4xl">
+                <div class="grid w-full flex-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('admin.common.search') }}</label>
                         <input
@@ -84,7 +84,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-3 py-8 text-center text-sm text-slate-500">{{ __('No options yet.') }}</td>
+                            <td colspan="7" class="px-3 py-8 text-center text-sm text-slate-500">@if (trim($search) !== '')
+                                    <p>{{ __('Nema rezultata za ovu pretragu.') }}</p>
+                                    <button type="button" wire:click="$set('search', '')" class="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">{{ __('Očisti pretragu') }}</button>
+                                @else
+                                    {{ __('No options yet.') }}
+                                @endif</td>
                         </tr>
                     @endforelse
                 </tbody>

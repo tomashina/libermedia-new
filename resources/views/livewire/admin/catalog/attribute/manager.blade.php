@@ -109,8 +109,9 @@
                     @empty
                         <tr>
                             <td colspan="7" class="px-3 py-8 text-center text-sm text-slate-500">
-                                {{ __('This group does not have any attributes yet.') }}
-                                @if ($group && ! $groupIsMsanManaged)
+                                {{ trim($search) !== '' ? __('Nema rezultata za ovu pretragu.') : __('This group does not have any attributes yet.') }}
+                                @if (trim($search) !== '')<button type="button" wire:click="$set('search', '')" class="ml-2 font-semibold text-cyan-700">{{ __('Očisti pretragu') }}</button>@endif
+                                @if ($group && ! $groupIsMsanManaged && trim($search) === '')
                                     <a href="{{ route('admin.attributes.groups.attributes.create', ['attributeGroup' => $group->id, 'locale' => $locale]) }}" class="ml-1 font-semibold text-cyan-700 hover:underline">{{ __('Add the first attribute') }}</a>
                                 @endif
                             </td>

@@ -1,4 +1,5 @@
 <div class="space-y-6">
+    <x-admin.form-errors />
     <div class="admin-panel admin-search-panel p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>

@@ -18,6 +18,19 @@
                     Iznos: <strong>{{ number_format((float) $order->grand_total, 2, ',', '.') }} €</strong><br>
                     Model: HR{{ preg_replace('/^HR/i', '', (string) ($bankTransfer['model'] ?? '00')) }}<br>
                     Poziv na broj: {{ $bankTransfer['reference'] ?? '' }}
+                    @foreach (['qr' => 'HUB3 barkod za mobilno bankarstvo', 'epc_qr' => 'SEPA QR kod'] as $prefix => $label)
+                        @if (!empty($bankTransfer[$prefix.'_image_base64']))
+                            @php
+                                $codeBinary = base64_decode((string) $bankTransfer[$prefix.'_image_base64'], true);
+                                $codeCid = $codeBinary !== false && isset($message) && method_exists($message, 'embedData')
+                                    ? $message->embedData($codeBinary, $prefix.'-'.$order->order_number.'.png', 'image/png') : null;
+                            @endphp
+                            @if ($codeBinary !== false)
+                                <p><strong>{{ $label }}</strong></p>
+                                <img src="{{ $codeCid ?: 'data:image/png;base64,'.$bankTransfer[$prefix.'_image_base64'] }}" alt="{{ $label }}" width="{{ $prefix === 'qr' ? 380 : 240 }}" style="max-width:100%;height:auto">
+                            @endif
+                        @endif
+                    @endforeach
                 </div>
             @endif
             <p style="margin:28px 0"><a href="{{ $purchaseUrl }}" style="display:inline-block;padding:15px 24px;border-radius:8px;background:#d64200;color:#fff;text-decoration:none;font-weight:bold">Pregledaj narudžbu bona</a></p>

@@ -1,14 +1,14 @@
 <div class="space-y-6">
     <div class="admin-panel admin-search-panel p-6">
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
             <div>
                 <h1 class="text-xl font-semibold tracking-tight">{{ __('admin.content.faq.manager.title') }}</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ __('admin.content.faq.manager.subtitle') }}</p>
                 <p class="mt-2 text-xs text-slate-500">{{ __('admin.content.faq.manager.items_per_page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
             </div>
 
-            <div class="flex w-[72rem] max-w-full items-end justify-end gap-3">
-                <div class="grid w-full max-w-[64rem] items-end gap-3" style="grid-template-columns: minmax(20rem, 1.4fr) 10rem 9rem 8rem;">
+            <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-end 2xl:max-w-5xl">
+                <div class="grid min-w-0 flex-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('admin.common.search') }}</label>
                         <input type="text" wire:model.live.debounce.300ms="search" placeholder="{{ __('admin.content.faq.manager.search_placeholder') }}" class="admin-search-input w-full rounded-xl border px-3 py-2 text-sm" />
@@ -39,7 +39,7 @@
                         </select>
                     </div>
                 </div>
-                <a href="{{ route('admin.content.faqs.create', ['locale' => $locale]) }}" class="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-800">
+                <a href="{{ route('admin.content.faqs.create', ['locale' => $locale]) }}" class="shrink-0 rounded-xl bg-cyan-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-cyan-800">
                     {{ __('admin.common.create') }}
                 </a>
             </div>
@@ -67,7 +67,7 @@
                         @php $tr = $row->translations->first(); @endphp
                         <tr>
                             <td class="px-3 py-2 text-slate-800">
-                                <div class="font-medium">{{ $tr?->question ?? __('admin.content.faq.manager.missing_question') }}</div>
+                                <a href="{{ route('admin.content.faqs.edit', ['faq' => $row->id, 'locale' => $locale]) }}" class="font-medium text-slate-900 hover:text-cyan-700">{{ $tr?->question ?? __('admin.content.faq.manager.missing_question') }}</a>
                                 <div class="text-xs text-slate-500">{{ $row->code }}</div>
                             </td>
                             <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ $tr?->slug ?? '-' }}</td>

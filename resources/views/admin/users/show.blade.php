@@ -5,6 +5,10 @@
         $billing = $user->addresses->firstWhere('type', 'billing');
         $shipping = $user->addresses->firstWhere('type', 'shipping');
         $avatarUrl = $user->getFirstMediaUrl('avatar');
+        $isLibermedia = \App\Support\StorefrontTheme::usesLibermediaBrand();
+        $canEditUser = auth()->user()?->isA('superadmin')
+            || (auth()->user()?->can('users.profile.update') && ! $user->isA('superadmin'));
+        $hasBusinessDetails = ($user->account_type === 'customer' && ! $user->can('admin.access')) || $user->b2bAccount;
     @endphp
 
     <div class="space-y-6">
@@ -20,7 +24,9 @@
                     @if ($loyaltyEnabled)
                         <a href="{{ route('admin.users.loyalty', ['user_id' => $user->id]) }}" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">{{ __('Loyalty Ledger') }}</a>
                     @endif
-                    <a href="{{ route('admin.users.edit', ['user' => $user->id]) }}" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">{{ __('Edit User') }}</a>
+                    @if ($canEditUser)
+                        <a href="{{ route('admin.users.edit', ['user' => $user->id]) }}" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">{{ __('Edit User') }}</a>
+                    @endif
                     <a href="{{ route('admin.users') }}" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">{{ __('Back') }}</a>
                 </div>
             </div>
@@ -28,6 +34,11 @@
 
         @include('admin.users.partials.purchase-statistics')
 
+        @if ($isLibermedia && $hasBusinessDetails)
+            <details class="admin-panel p-5">
+                <summary class="cursor-pointer text-sm font-semibold text-slate-700">{{ __('Poslovni podaci i evidencija kupca') }}</summary>
+                <div class="mt-4 space-y-6">
+        @endif
         @if ($user->account_type === 'customer' && ! $user->can('admin.access'))
             <livewire:admin.user.customer-details-editor :user-id="$user->id" />
             <livewire:admin.user.customer-crm-manager :customer-id="$user->id" />
@@ -45,7 +56,9 @@
                         <h2 class="mt-3 text-xl font-semibold text-slate-900">{{ $b2b->company_name }}</h2>
                         <p class="mt-1 text-sm text-slate-600">OIB {{ $b2b->oib }} · {{ __($b2bStatusLabel) }}</p>
                     </div>
-                    <a href="{{ route('admin.users.b2b', ['account' => $b2b->id]) }}" class="rounded-xl border border-cyan-300 bg-white px-4 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50">{{ __('Otvori B2B postavke') }}</a>
+                    @unless (config('commerce.b2c_only'))
+                        <a href="{{ route('admin.users.b2b', ['account' => $b2b->id]) }}" class="rounded-xl border border-cyan-300 bg-white px-4 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50">{{ __('Otvori B2B postavke') }}</a>
+                    @endunless
                 </div>
                 <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div><span class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ __('Cjenovna grupa') }}</span><div class="mt-1 text-sm font-medium text-slate-800">{{ $b2b->customerGroup?->name ?: '—' }}</div></div>
@@ -55,10 +68,14 @@
                 </div>
             </div>
         @endif
+        @if ($isLibermedia && $hasBusinessDetails)
+                </div>
+            </details>
+        @endif
 
         <div class="admin-panel admin-form-panel p-6">
             <p class="admin-section-title">{{ __('Core') }}</p>
-            <div class="mt-4 grid gap-4" style="grid-template-columns: 7rem repeat(12, minmax(0, 1fr));">
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[7rem_repeat(12,minmax(0,1fr))]">
                 <div class="flex items-start justify-center">
                     @if ($avatarUrl)
                         <img src="{{ $avatarUrl }}" alt="{{ __('Avatar') }}" class="h-16 w-16 rounded-full border border-slate-200 object-cover" />
@@ -68,19 +85,19 @@
                         </div>
                     @endif
                 </div>
-                <div style="grid-column: span 4;">
+                <div class="min-w-0 xl:col-span-4">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ $user->companyName() ? __('Kontakt') : __('Name') }}</label>
                     <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{{ $user->name }}</div>
                 </div>
-                <div style="grid-column: span 4;">
+                <div class="min-w-0 xl:col-span-4">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Email') }}</label>
-                    <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{{ $user->email }}</div>
+                    <div class="break-words rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{{ $user->email }}</div>
                 </div>
-                <div style="grid-column: span 2;">
+                <div class="xl:col-span-2">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Role') }}</label>
                     <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{{ $roleLabel }}</div>
                 </div>
-                <div style="grid-column: span 2;">
+                <div class="xl:col-span-2">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Verified') }}</label>
                     <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm {{ $user->email_verified_at ? 'text-emerald-700' : 'text-amber-700' }}">
                         {{ $user->email_verified_at ? __('Yes') : __('No') }}
@@ -99,10 +116,10 @@
             </div>
         </div>
 
-        <div class="grid gap-6" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <div class="admin-panel admin-form-panel p-6">
                 <p class="admin-section-title">{{ __('Profile') }}</p>
-                <div class="mt-4 grid gap-3" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div><span class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ __('First name') }}</span><div class="mt-1 text-sm text-slate-800">{{ $user->profile?->first_name ?: '-' }}</div></div>
                     <div><span class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ __('Last name') }}</span><div class="mt-1 text-sm text-slate-800">{{ $user->profile?->last_name ?: '-' }}</div></div>
                     <div><span class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ __('Phone') }}</span><div class="mt-1 text-sm text-slate-800">{{ $user->profile?->phone ?: '-' }}</div></div>
@@ -138,11 +155,11 @@
             </div>
         </div>
 
-        <div class="grid gap-6" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
             @if ($loyaltyEnabled)
                 <div class="admin-panel admin-panel-soft p-5">
                     <h2 class="admin-section-title">{{ __('Loyalty') }}</h2>
-                    <div class="mt-3 grid gap-2" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+                    <div class="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
                         <div class="rounded-xl border border-slate-200 bg-white p-2.5 text-center">
                             <div class="text-[11px] uppercase tracking-[0.1em] text-slate-500">{{ __('Balance') }}</div>
                             <div class="mt-1 text-sm font-semibold {{ $loyaltyStats['balance'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $loyaltyStats['balance'] }}</div>
@@ -218,7 +235,7 @@
                                     <td class="px-2 py-2">
                                         <a href="{{ route('admin.orders.show', ['order' => $order->id]) }}" class="text-cyan-700 hover:text-cyan-900">{{ $order->display_order_number }}</a>
                                     </td>
-                                    <td class="px-2 py-2">{{ $order->status?->name ?: '-' }}</td>
+                                    <td class="px-2 py-2">{{ $order->status?->display_name ?: '-' }}</td>
                                     <td class="px-2 py-2 text-right">{{ \App\Support\Currency::format((float) $order->grand_total, $order->currency_code) }}</td>
                                     <td class="px-2 py-2">{{ $order->created_at?->format('Y-m-d H:i') ?? '-' }}</td>
                                 </tr>
@@ -232,7 +249,7 @@
             @endif
         </div>
 
-        <div class="grid gap-6" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <div class="admin-panel admin-panel-soft p-5">
                 <h2 class="admin-section-title">{{ __('Recent Admin Activity') }}</h2>
                 <div class="mt-3 overflow-x-auto">

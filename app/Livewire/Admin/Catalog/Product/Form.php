@@ -24,6 +24,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Throwable;
@@ -254,15 +255,25 @@ class Form extends Component
         if ($this->useAttributes()) {
             $resolvedAttributeIds = $this->resolveAttributeIdsForSave();
             if ($resolvedAttributeIds === false) {
+                $this->activeTab = 'attributes';
+
                 return null;
             }
 
             $this->form['attribute_ids'] = $resolvedAttributeIds;
         }
 
-        $validated = $this->validate($this->rules());
+        try {
+            $validated = $this->validate($this->rules());
+        } catch (ValidationException $exception) {
+            $this->revealValidationTab(array_keys($exception->errors()));
+
+            throw $exception;
+        }
         if ($this->usesExtendedProductTabs()
             && (! $this->validateCommerceRows($validated) || ! $this->validateEnergyRows($validated))) {
+            $this->revealValidationTab($this->getErrorBag()->keys());
+
             return null;
         }
 
@@ -270,11 +281,15 @@ class Form extends Component
 
         $payload = $this->decodeJsonField('form.payload_text');
         if ($payload === false) {
+            $this->activeTab = 'seo';
+
             return null;
         }
 
         $translationPayload = $this->decodeJsonField('form.translation_payload_text');
         if ($translationPayload === false) {
+            $this->activeTab = 'seo';
+
             return null;
         }
 
@@ -394,6 +409,26 @@ class Form extends Component
                 'type' => 'success',
                 'message' => __('Product created. Now upload product images.'),
             ]);
+    }
+
+    private function revealValidationTab(array $fields): void
+    {
+        $field = (string) ($fields[0] ?? '');
+        $tab = match (true) {
+            str_starts_with($field, 'form.meta_'), in_array($field, ['form.payload_text', 'form.translation_payload_text'], true) => 'seo',
+            str_starts_with($field, 'form.category_ids') => 'catalog',
+            str_starts_with($field, 'attribute'), str_starts_with($field, 'form.attribute_ids') => 'attributes',
+            str_starts_with($field, 'groupPrices') => 'b2b',
+            str_starts_with($field, 'energyDeclarations'), $field === 'form.energy_label_required' => 'energy',
+            str_starts_with($field, 'packages'), in_array($field, ['form.barcode', 'form.unit_of_measure', 'form.minimum_order_quantity', 'form.order_quantity_step', 'form.weight_kg', 'form.length_cm', 'form.width_cm', 'form.height_cm'], true), str_starts_with($field, 'form.shipping_labels') => 'logistics',
+            default => 'content',
+        };
+        $this->activeTab = in_array($tab, $this->availableTabs(), true) ? $tab : 'content';
+    }
+
+    public function discardCategory(int $categoryId): void
+    {
+        $this->removeCategory($categoryId);
     }
 
     public function backToList()

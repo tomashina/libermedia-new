@@ -440,7 +440,7 @@
                                 </td>
                                 <td class="max-w-52 truncate px-4 py-3 text-slate-700">{{ $order->customerDisplayName() }}@if ($order->customerDisplayName() !== $order->customer_name)<span class="mt-1 block text-xs text-slate-500">{{ __('Kontakt') }}: {{ $order->customer_name }}</span>@endif</td>
                                 <td class="px-4 py-3">
-                                    <span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $orderStatusClass }}">{{ $order->status?->name ?? __('Unknown') }}</span>
+                                    <span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $orderStatusClass }}">{{ $order->status?->display_name ?? __('Unknown') }}</span>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-slate-900">{{ \App\Support\Currency::format((float) $order->grand_total, $order->currency_code) }}</td>
                             </tr>

@@ -12,6 +12,7 @@ use App\Services\Sales\CustomerOfferAccess;
 use App\Services\Sales\CustomerOfferPdf;
 use App\Services\Sales\CustomerOfferService;
 use App\Support\Media\LegacyCatalogImage;
+use App\Support\StorefrontTheme;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -136,8 +137,12 @@ class CustomerOfferController extends Controller
         return response()->json(array_slice($rows, 0, 50))->header('Cache-Control', 'private, no-store');
     }
 
-    public function buyerIndex(Request $request): View
+    public function buyerIndex(Request $request): View|RedirectResponse
     {
+        if (StorefrontTheme::usesLibermediaBrand()) {
+            return redirect()->route('account.dashboard');
+        }
+
         $offers = CustomerOffer::query()->where('customer_user_id', $request->user()->id)->where('status', 'sent')->latest('sent_at')->paginate(20);
 
         return view('front.desktop.account.customer-offers', compact('offers'));

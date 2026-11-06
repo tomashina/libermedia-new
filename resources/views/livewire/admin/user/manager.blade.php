@@ -1,23 +1,26 @@
 <div class="space-y-6">
     @php
         $isAssignedCustomerView = app(\App\Services\Admin\OrderManagerAccess::class)->isRestricted();
+        $isLibermedia = \App\Support\StorefrontTheme::usesLibermediaBrand();
+        $hasAdvancedFilters = $segment !== '' || $representative !== '' || $city !== '' || $postalCode !== ''
+            || $county !== '' || $customerType !== '' || $visit !== '' || $turnoverYear !== '' || strtoupper($turnoverCurrency) !== 'EUR';
     @endphp
     <div class="admin-panel admin-search-panel p-6">
-        <div class="flex items-end justify-between gap-4">
-            <div>
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div class="min-w-0">
                 <h1 class="text-xl font-semibold tracking-tight">{{ $isAssignedCustomerView ? __('Moji kupci') : __('Users') }}</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ $isAssignedCustomerView ? __('Prikazani su samo kupci koji su vam dodijeljeni. Za izradu narudžbe odaberite „Naruči za kupca”.') : __('User administration with role-based access and account controls.') }}</p>
                 <p class="mt-2 text-xs text-slate-500">{{ __('Items per page') }}: <span class="admin-chip">{{ $perPage }}</span></p>
             </div>
 
-            <div class="flex w-[64rem] max-w-full items-end justify-end gap-3">
-                <div class="grid w-full max-w-[68rem] items-end gap-3" style="grid-template-columns: minmax(30rem, 1fr) 12rem 14rem;">
-                    <div>
+            <div class="w-full xl:max-w-4xl">
+                <div class="grid w-full items-end gap-3 {{ $isLibermedia ? 'sm:grid-cols-[minmax(0,1fr)_12rem]' : 'sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_12rem_14rem]' }}">
+                    <div class="min-w-0">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('admin.common.search') }}</label>
                         <input
                             type="text"
                             wire:model.live.debounce.300ms="search"
-                            placeholder="{{ __('Tvrtka, OIB, ime kontakta ili e-mail...') }}"
+                            placeholder="{{ $isLibermedia ? __('Ime, e-mail ili kontakt kupca...') : __('Tvrtka, OIB, ime kontakta ili e-mail...') }}"
                             class="admin-search-input w-full rounded-xl border px-3 py-2 text-sm"
                         />
                     </div>
@@ -30,6 +33,7 @@
                             @endforeach
                         </select>
                     </div>
+                    @unless ($isLibermedia)
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('Segment') }}</label>
                         <select wire:model.live="segment" data-tom-select class="admin-select w-full rounded-xl border px-3 py-2 text-sm">
@@ -39,10 +43,18 @@
                             @endforeach
                         </select>
                     </div>
+                    @endunless
                 </div>
             </div>
         </div>
+        @if ($isLibermedia)
+            <details class="mt-5 border-t border-slate-200 pt-4" @if ($hasAdvancedFilters) open @endif>
+                <summary class="cursor-pointer text-sm font-semibold text-slate-700">{{ __('Napredni filtri i evidencija kupaca') }}</summary>
+        @endif
         <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            @if ($isLibermedia)
+                <label class="text-xs font-semibold text-slate-500">{{ __('Segment') }}<select wire:model.live="segment" class="admin-select mt-1 w-full rounded-lg border px-3 py-2 text-sm"><option value="">{{ __('All segments') }}</option>@foreach ($segments as $segmentItem)<option value="{{ $segmentItem->id }}">{{ $segmentItem->name }}</option>@endforeach</select></label>
+            @endif
             <label class="text-xs font-semibold text-slate-500">{{ __('Komercijalist') }}<select wire:model.live="representative" class="admin-select mt-1 w-full rounded-lg border px-3 py-2 text-sm"><option value="">{{ __('Svi dostupni') }}</option>@if (! $isAssignedCustomerView)<option value="unassigned">{{ __('Bez komercijalista') }}</option>@endif @foreach ($representatives as $rep)<option value="{{ $rep->id }}">{{ $rep->name }}</option>@endforeach</select></label>
             <label class="text-xs font-semibold text-slate-500">{{ __('Mjesto') }}<input wire:model.live.debounce.300ms="city" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"></label>
             <label class="text-xs font-semibold text-slate-500">{{ __('Poštanski broj') }}<input wire:model.live.debounce.300ms="postalCode" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"></label>
@@ -54,10 +66,18 @@
             <label class="text-xs font-semibold text-slate-500">{{ __('Valuta prometa') }}<input maxlength="3" wire:model.live.debounce.500ms="turnoverCurrency" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm uppercase"></label>
             <div class="flex items-end"><a href="{{ route('admin.users.crm') }}" class="rounded-lg border px-3 py-2 text-sm font-semibold text-cyan-700">{{ __('CRM i izvještaj komercijalista') }}</a></div>
         </div>
+        @if ($isLibermedia)
+            </details>
+        @endif
     </div>
 
     @if ($canAssign || $canSegment)
         <div class="admin-panel space-y-3 p-5">
+            @if ($isLibermedia)
+                <details @if (count($selectedCustomers) > 0) open @endif>
+                    <summary class="cursor-pointer text-sm font-semibold text-slate-700">{{ __('Grupno uređivanje kupaca') }} <span class="admin-chip">{{ count($selectedCustomers) }}</span></summary>
+                    <div class="mt-4 space-y-3">
+            @endif
             <p class="text-sm font-semibold">{{ __('Grupno uređivanje odabranih kupaca') }} <span class="admin-chip">{{ count($selectedCustomers) }}</span></p>
             <p class="text-xs text-slate-500">{{ __('Označite kupce u tablici. Promjena se primjenjuje samo na označene kupce.') }}</p>
             <div class="flex flex-wrap items-end gap-3">
@@ -73,6 +93,10 @@
                 @endif
             </div>
             @foreach (['selectedCustomers', 'bulkRepresentative', 'bulkSegment', 'segmentMode'] as $field) @error($field)<p class="text-xs text-rose-600">{{ $message }}</p>@enderror @endforeach
+            @if ($isLibermedia)
+                    </div>
+                </details>
+            @endif
         </div>
     @endif
 
@@ -90,20 +114,20 @@
                                 {{ __('ID') }} <span class="text-xs">{{ $sortBy === 'id' ? ($sortDir === 'asc' ? '^' : 'v') : '<>' }}</span>
                             </button>
                         </th>
-                        <th class="px-3 py-2 text-left font-semibold">{{ __('Tvrtka / OIB') }}</th>
+                        @unless ($isLibermedia)<th class="px-3 py-2 text-left font-semibold">{{ __('Tvrtka / OIB') }}</th>@endunless
                         <th class="px-3 py-2 text-left font-semibold">
                             <button type="button" wire:click="sort('name')" class="inline-flex items-center gap-1">
-                                {{ __('Kontakt') }} <span class="text-xs">{{ $sortBy === 'name' ? ($sortDir === 'asc' ? '^' : 'v') : '<>' }}</span>
+                                {{ $isLibermedia ? __('Kupac') : __('Kontakt') }} <span class="text-xs">{{ $sortBy === 'name' ? ($sortDir === 'asc' ? '^' : 'v') : '<>' }}</span>
                             </button>
                             <span class="mx-1 text-slate-400">/</span>
                             <button type="button" wire:click="sort('email')" class="inline-flex items-center gap-1">
                                 {{ __('Email') }} <span class="text-xs">{{ $sortBy === 'email' ? ($sortDir === 'asc' ? '^' : 'v') : '<>' }}</span>
                             </button>
                         </th>
-                        <th class="px-3 py-2 text-left font-semibold">{{ __('Komercijalist / lokacija') }}</th>
+                        <th class="px-3 py-2 text-left font-semibold">{{ $isLibermedia ? __('Lokacija') : __('Komercijalist / lokacija') }}</th>
                         <th class="px-3 py-2 text-right font-semibold"><button type="button" wire:click="sort('webshop_turnover')">{{ __('Promet webshopa bez PDV-a') }} {{ $sortBy === 'webshop_turnover' ? ($sortDir === 'asc' ? '↑' : '↓') : '↕' }}</button></th>
                         <th class="px-3 py-2 text-center font-semibold">{{ __('Role') }}</th>
-                        <th class="px-3 py-2 text-center font-semibold">{{ __('Segments') }}</th>
+                        @unless ($isLibermedia)<th class="px-3 py-2 text-center font-semibold">{{ __('Segments') }}</th>@endunless
                         @if ($loyaltyEnabled)
                             <th class="px-3 py-2 text-center font-semibold">{{ __('Loyalty') }}</th>
                         @endif
@@ -138,28 +162,35 @@
                         <tr>
                             @if ($canAssign || $canSegment)<td class="px-3 py-2">@if ($row->account_type === 'customer' && ! $row->can('admin.access') && ! $row->isA('superadmin', 'admin', 'editor', 'order_manager'))<input type="checkbox" wire:model.live="selectedCustomers" value="{{ $row->id }}" aria-label="{{ __('Odaberi kupca') }} {{ $company ?: $row->name }}">@endif</td>@endif
                             <td class="px-3 py-2 text-center font-mono text-xs text-slate-700">{{ $row->id }}</td>
+                            @unless ($isLibermedia)
                             <td class="px-3 py-2 text-slate-800" style="min-width: 15rem;">
                                 <a href="{{ route('admin.users.show', ['user' => $row->id]) }}" class="font-semibold text-slate-900 hover:text-cyan-700">{{ $row->customerDisplayName() }}</a>
                                 <div class="mt-1 font-mono text-xs text-slate-600">{{ __('OIB') }}: {{ $oib ?: '—' }}</div>
                                 <span class="inline-flex rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{{ $row->commerceCustomerType() }}</span>
                             </td>
+                            @endunless
                             <td class="px-3 py-2 text-slate-700">
-                                <div class="font-medium">{{ $row->name }}</div>
+                                @if ($isLibermedia)
+                                    <a href="{{ route('admin.users.show', ['user' => $row->id]) }}" class="font-semibold text-slate-900 hover:text-cyan-700">{{ $row->name }}</a>
+                                @else
+                                    <div class="font-medium">{{ $row->name }}</div>
+                                @endif
                                 <div class="mt-1 text-xs text-slate-500">{{ $row->email }}</div>
                                 @if ($isCurrent)
                                     <div class="text-xs text-cyan-700">{{ __('Current user') }}</div>
                                 @endif
                             </td>
                             <td class="px-3 py-2 text-xs text-slate-600">
-                                <div class="font-semibold text-slate-800">{{ $row->salesRepresentatives->pluck('name')->join(', ') ?: '—' }}</div>
+                                @unless ($isLibermedia)<div class="font-semibold text-slate-800">{{ $row->salesRepresentatives->pluck('name')->join(', ') ?: '—' }}</div>@endunless
                                 <div class="mt-1">{{ $row->b2bAccount?->postal_code ?: $billing?->postal_code }} {{ $row->b2bAccount?->city ?: $billing?->city }}</div>
                                 <div>{{ $row->profile?->county ?: $billing?->state }}</div>
-                                @if ($row->profile?->customer_type)<div class="mt-1 text-cyan-700">{{ $row->profile->customer_type }}</div>@endif
+                                @if (! $isLibermedia && $row->profile?->customer_type)<div class="mt-1 text-cyan-700">{{ $row->profile->customer_type }}</div>@endif
                             </td>
                             <td class="px-3 py-2 text-right text-xs font-semibold text-slate-700">{{ \App\Support\Currency::format((float) $row->webshop_turnover, strtoupper($turnoverCurrency)) }}</td>
                             <td class="px-3 py-2 text-center">
                                 <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ $roleTitle }}</span>
                             </td>
+                            @unless ($isLibermedia)
                             <td class="px-3 py-2 text-center">
                                 <div class="flex flex-wrap items-center justify-center gap-1.5">
                                     @forelse ($row->customerGroups as $group)
@@ -169,6 +200,7 @@
                                     @endforelse
                                 </div>
                             </td>
+                            @endunless
                             @if ($loyaltyEnabled)
                                 <td class="px-3 py-2 text-center">
                                     @if ((bool) ($row->loyalty_available ?? false))
@@ -197,15 +229,17 @@
                                     <a href="{{ route('admin.users.show', ['user' => $row->id]) }}" class="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">
                                         {{ __('Show') }}
                                     </a>
+                                    @if ($canEditUsers && (auth()->user()->isA('superadmin') || ! $row->isA('superadmin')))
                                     <a href="{{ route('admin.users.edit', ['user' => $row->id]) }}" class="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">
                                         {{ __('admin.common.edit') }}
                                     </a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ ($loyaltyEnabled ? 11 : 10) + (($canAssign || $canSegment) ? 1 : 0) }}" class="px-3 py-8 text-center text-sm text-slate-500">{{ $isAssignedCustomerView ? __('Nema dodijeljenih kupaca koji odgovaraju pretrazi.') : __('No users found.') }}</td>
+                            <td colspan="{{ ($isLibermedia ? 8 : 10) + ($loyaltyEnabled ? 1 : 0) + (($canAssign || $canSegment) ? 1 : 0) }}" class="px-3 py-8 text-center text-sm text-slate-500">{{ $isAssignedCustomerView ? __('Nema dodijeljenih kupaca koji odgovaraju pretrazi.') : __('No users found.') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

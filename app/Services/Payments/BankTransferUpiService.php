@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Models\Sales\Order\Order;
 use App\Models\Settings\Local\PaymentMethod;
+use App\Support\StorefrontTheme;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -26,7 +27,9 @@ class BankTransferUpiService
         $settings = $this->resolveMethodSettings((string) $order->payment_method_code);
         $next = $this->buildSnapshot($order, $settings, $current);
 
-        if (! (bool) config('commerce.local_safe_mode') && ($next['qr_image_base64'] ?? '') === '' && $this->hasReceiverIdentity($next)) {
+        if ($next['local_codes']) {
+            $next = $this->withLocalCodes($next, $current);
+        } elseif (! (bool) config('commerce.local_safe_mode') && ($next['qr_image_base64'] ?? '') === '' && $this->hasReceiverIdentity($next)) {
             $qrResult = $this->generateQrBase64($next);
             if (($qrResult['base64'] ?? '') !== '') {
                 $next['qr_image_base64'] = (string) $qrResult['base64'];
@@ -77,7 +80,13 @@ class BankTransferUpiService
             ->where('code', $methodCode)
             ->first();
 
-        return is_array($method?->settings) ? $method->settings : [];
+        $settings = is_array($method?->settings) ? $method->settings : [];
+
+        if (StorefrontTheme::usesLibermediaBrand()) {
+            $settings = LibermediaBankDetails::settings($settings, $method?->description);
+        }
+
+        return $settings;
     }
 
     /**
@@ -87,6 +96,14 @@ class BankTransferUpiService
      */
     private function buildSnapshot(Order $order, array $settings, array $current): array
     {
+        $savedIban = strtoupper(preg_replace('/\s+/', '', (string) ($current['receiver_iban'] ?? '')));
+        $configuredIban = strtoupper(preg_replace('/\s+/', '', (string) ($settings['upi_receiver_iban'] ?? '')));
+        if ($savedIban !== '' && $savedIban !== $configuredIban) {
+            // A historical account must never acquire another recipient's identity.
+            foreach (['upi_receiver_name', 'upi_receiver_street', 'upi_receiver_place', 'upi_receiver_iban', 'bank_instructions'] as $key) {
+                unset($settings[$key]);
+            }
+        }
         $shippingAddress = trim((string) ($order->shipping_address_line_1 ?: $order->billing_address_line_1));
         $shippingPlace = trim((string) (($order->shipping_postal_code ?: $order->billing_postal_code).' '.($order->shipping_city ?: $order->billing_city)));
 
@@ -95,10 +112,10 @@ class BankTransferUpiService
             $reference = (string) $order->id.now()->format('y');
         }
 
-        $receiverName = trim((string) ($current['receiver_name'] ?? $settings['upi_receiver_name'] ?? ''));
-        $receiverStreet = trim((string) ($current['receiver_street'] ?? $settings['upi_receiver_street'] ?? ''));
-        $receiverPlace = trim((string) ($current['receiver_place'] ?? $settings['upi_receiver_place'] ?? ''));
-        $receiverIban = strtoupper(str_replace(' ', '', trim((string) ($current['receiver_iban'] ?? $settings['upi_receiver_iban'] ?? ''))));
+        $receiverName = $this->snapshotValue($current, 'receiver_name', $settings, 'upi_receiver_name');
+        $receiverStreet = $this->snapshotValue($current, 'receiver_street', $settings, 'upi_receiver_street');
+        $receiverPlace = $this->snapshotValue($current, 'receiver_place', $settings, 'upi_receiver_place');
+        $receiverIban = strtoupper(preg_replace('/\s+/', '', $this->snapshotValue($current, 'receiver_iban', $settings, 'upi_receiver_iban')));
 
         return [
             'order_number' => (string) $order->order_number,
@@ -106,10 +123,11 @@ class BankTransferUpiService
             'amount_cents' => (int) round(((float) $order->grand_total) * 100),
             'currency' => strtoupper((string) ($order->currency_code ?: 'EUR')),
             'reference' => $reference,
-            'model' => trim((string) ($current['model'] ?? $settings['upi_model'] ?? '00')),
-            'purpose_code' => trim((string) ($current['purpose_code'] ?? $settings['upi_purpose_code'] ?? 'SUPP')),
-            'description' => trim((string) ($current['description'] ?? $settings['upi_description'] ?? 'Web narudzba')),
-            'instructions' => trim((string) ($current['instructions'] ?? $settings['bank_instructions'] ?? '')),
+            'model' => $this->snapshotValue($current, 'model', $settings, 'upi_model', '00'),
+            'purpose_code' => $this->snapshotValue($current, 'purpose_code', $settings, 'upi_purpose_code', 'SUPP'),
+            'description' => $this->snapshotValue($current, 'description', $settings, 'upi_description', 'Web narudzba'),
+            'instructions' => $this->snapshotValue($current, 'instructions', $settings, 'bank_instructions'),
+            'local_codes' => StorefrontTheme::usesLibermediaBrand() || (bool) ($current['local_codes'] ?? $settings['bank_local_codes'] ?? false),
 
             'sender_name' => trim((string) ($order->customer_name ?: trim($order->billing_first_name.' '.$order->billing_last_name))),
             'sender_street' => $shippingAddress,
@@ -123,8 +141,47 @@ class BankTransferUpiService
             'qr_image_base64' => trim((string) ($current['qr_image_base64'] ?? '')),
             'qr_image_mime' => trim((string) ($current['qr_image_mime'] ?? 'image/png')),
             'qr_error' => trim((string) ($current['qr_error'] ?? '')),
+            'epc_qr_image_base64' => trim((string) ($current['epc_qr_image_base64'] ?? '')),
+            'epc_qr_image_mime' => 'image/png',
+            'epc_qr_error' => trim((string) ($current['epc_qr_error'] ?? '')),
             'generated_at' => trim((string) ($current['generated_at'] ?? '')),
         ];
+    }
+
+    private function snapshotValue(array $current, string $key, array $settings, string $setting, string $default = ''): string
+    {
+        return trim((string) ($current[$key] ?? '')) ?: (trim((string) ($settings[$setting] ?? '')) ?: $default);
+    }
+
+    private function withLocalCodes(array $snapshot, array $current): array
+    {
+        $input = array_intersect_key($snapshot, array_flip([
+            'amount_cents', 'currency', 'reference', 'model', 'purpose_code', 'description',
+            'sender_name', 'sender_street', 'sender_place', 'receiver_name', 'receiver_street', 'receiver_place', 'receiver_iban',
+        ]));
+        $fingerprint = hash('sha256', json_encode($input, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+        if (($current['codes_fingerprint'] ?? '') !== $fingerprint) {
+            $snapshot['qr_image_base64'] = $snapshot['epc_qr_image_base64'] = '';
+        }
+
+        foreach ([['qr', Hub3BarcodeService::class], ['epc_qr', EpcQrService::class]] as [$prefix, $generator]) {
+            if ($snapshot[$prefix.'_image_base64'] !== '') {
+                continue;
+            }
+            try {
+                $snapshot[$prefix.'_image_base64'] = base64_encode(app($generator)->png($snapshot));
+                $snapshot[$prefix.'_image_mime'] = 'image/png';
+                $snapshot[$prefix.'_error'] = '';
+                $snapshot['generated_at'] = now()->toIso8601String();
+            } catch (\Throwable $exception) {
+                // Never replace invalid payment data with a sample barcode.
+                $snapshot[$prefix.'_error'] = 'Kod za uplatu nije dostupan.';
+                Log::warning('Local bank payment code unavailable.', ['format' => $prefix, 'exception' => $exception::class]);
+            }
+        }
+        $snapshot['codes_fingerprint'] = $fingerprint;
+
+        return $snapshot;
     }
 
     /**
